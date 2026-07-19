@@ -1,1 +1,150 @@
-/* Adaptaciones responsive */
+@media (max-width: 1180px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --header-height: 76px;
+  }
+
+  .admin-shell {
+    display: block;
+  }
+
+  .admin-sidebar {
+    transform: translateX(-105%);
+    transition: transform 220ms ease;
+  }
+
+  body.sidebar-open .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  body.sidebar-open .sidebar-backdrop {
+    display: block;
+  }
+
+  .admin-main {
+    min-width: 0;
+  }
+
+  .menu-button {
+    display: grid;
+  }
+
+  .admin-content {
+    padding: 30px 22px;
+  }
+
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .login-brand-panel {
+    display: none;
+  }
+
+  .login-form-panel {
+    min-height: 100vh;
+    padding: 32px 22px;
+  }
+
+  .login-mobile-brand {
+    display: flex;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-header {
+    padding-inline: 16px;
+  }
+
+  .header-title-group > div > span {
+    display: none;
+  }
+
+  .header-title-group h1 {
+    font-size: 1.12rem;
+  }
+
+  .notification-button,
+  .user-chip > div,
+  .user-chip > .icon {
+    display: none;
+  }
+
+  .user-chip {
+    min-width: auto;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .admin-content {
+    padding: 24px 16px 36px;
+  }
+
+  .page-heading,
+  .dashboard-hero {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .dashboard-actions,
+  .dashboard-actions .btn,
+  .page-heading > .btn {
+    width: 100%;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    min-height: 150px;
+  }
+
+  .panel-card-heading {
+    align-items: flex-start;
+  }
+
+  .activity-card,
+  .gallery-mode-card,
+  .settings-card,
+  .settings-explanation,
+  .module-placeholder {
+    padding: 22px;
+  }
+
+  .settings-form-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .login-card h2 {
+    font-size: 1.85rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-sidebar {
+    width: min(88vw, var(--sidebar-width));
+  }
+
+  .header-title-group {
+    gap: 8px;
+  }
+
+  .icon-button {
+    width: 39px;
+    height: 39px;
+  }
+}

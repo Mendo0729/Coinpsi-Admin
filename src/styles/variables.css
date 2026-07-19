@@ -1,17 +1,38 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
 
 :root {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --navy-950: #050b1d;
   --navy-900: #0b1f4d;
   --navy-800: #122b64;
   --blue-500: #2563eb;
   --blue-600: #1d4ed8;
+  --blue-700: #1e40af;
   --blue-50: #eff6ff;
+  --accent: #38bdf8;
   --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-700: #334155;
   --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
   --slate-200: #e2e8f0;
+  --slate-150: #edf2f7;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
   --surface: #f5f7fa;
   --white: #ffffff;
+  --success: #16a34a;
+  --success-soft: #dcfce7;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 10px 20px rgb(15 23 42 / 0.08);
+  --shadow-lg: 0 22px 45px rgb(15 23 42 / 0.12);
+  --shadow-xl: 0 28px 70px rgb(5 11 29 / 0.25);
+  --sidebar-width: 276px;
+  --header-height: 84px;
 }
