@@ -1,0 +1,9 @@
+@import url("./styles/variables.css");
+@import url("./styles/globals.css");
+@import url("./styles/layout.css");
+@import url("./styles/forms.css");
+@import url("./styles/tables.css");
+@import url("./styles/dashboard.css");
+@import url("./styles/events.css");
+@import url("./styles/gallery.css");
+@import url("./styles/responsive.css");
