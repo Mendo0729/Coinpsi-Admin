@@ -6,6 +6,7 @@ import { renderEventsPage } from "./pages/events.js";
 import { renderGalleryPage } from "./pages/gallery.js";
 import { renderGallerySettingsPage } from "./pages/gallerySettings.js";
 import { renderNotFoundPage } from "./pages/notFound.js";
+import { validateSession } from "./services/session.service.js";
 
 const app = document.getElementById("app");
 
@@ -35,4 +36,9 @@ function renderRoute(path) {
   initAdminLayout();
 }
 
-startRouter(renderRoute);
+async function bootstrap() {
+  await validateSession();
+  startRouter(renderRoute);
+}
+
+bootstrap();

@@ -1,28 +1,52 @@
+import { getCurrentAdmin } from "./auth.service.js";
+
 const SESSION_KEY = "coinpsi_admin_session";
 
 export function getSession() {
   try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
   } catch {
     return null;
   }
 }
 
 export function isAuthenticated() {
-  return Boolean(getSession()?.email);
+  const session = getSession();
+  return Boolean(session?.token && session?.email);
 }
 
-export function createDevelopmentSession(email) {
+export function saveSession(token, user) {
   const session = {
-    email,
-    name: email.split("@")[0].replace(/[._-]/g, " "),
-    role: "Administrador",
+    token,
+    user,
+    email: user.email,
+    name: user.fullName,
+    role: user.role,
     createdAt: new Date().toISOString()
   };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
 }
 
+export async function validateSession() {
+  const session = getSession();
+
+  if (!session?.token) {
+    clearSession();
+    return false;
+  }
+
+  try {
+    const response = await getCurrentAdmin(session.token);
+    saveSession(session.token, response.user);
+    return true;
+  } catch {
+    clearSession();
+    return false;
+  }
+}
+
 export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
