@@ -4,7 +4,8 @@ import {
   cancelAdminEvent,
   createAdminEvent,
   deleteAdminEvent,
-  getAdminEvents
+  getAdminEvents,
+  updateAdminEvent
 } from "../services/event.service.js";
 import { clearSession, getSession } from "../services/session.service.js";
 
@@ -20,6 +21,8 @@ const MODALITY_LABELS = {
   virtual: "Virtual",
   hybrid: "Hibrido"
 };
+
+let adminEvents = [];
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -45,6 +48,31 @@ function formatDate(value) {
     hour12: true,
     timeZone: "America/Panama"
   }).format(date);
+}
+
+function toPanamaInputValue(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Panama",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => ["year", "month", "day", "hour", "minute"].includes(part.type))
+      .map((part) => [part.type, part.value])
+  );
+
+  return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
 }
 
 function renderLoadingState() {
@@ -86,6 +114,12 @@ function renderEventActions(event) {
   return `
     <div class="event-actions">
       <button
+        class="event-action-button event-action-edit"
+        type="button"
+        data-event-action="edit"
+        data-event-id="${eventId}"
+      >Editar</button>
+      <button
         class="event-action-button event-action-cancel"
         type="button"
         data-event-action="cancel"
@@ -126,7 +160,12 @@ function renderEventRows(events) {
           </div>
         </td>
         <td><span class="event-modality">${escapeHtml(modality)}</span></td>
-        <td>${escapeHtml(event.location || "Sin ubicacion")}</td>
+        <td>
+          <div class="event-contact-cell">
+            <span>${escapeHtml(event.location || "Sin ubicacion")}</span>
+            <small>${event.whatsappNumber ? `WhatsApp: +${escapeHtml(event.whatsappNumber)}` : "Sin WhatsApp"}</small>
+          </div>
+        </td>
         <td><span class="event-status event-status-${escapeHtml(event.status)}">${escapeHtml(status)}</span></td>
         <td>${renderEventActions(event)}</td>
       </tr>
@@ -145,7 +184,7 @@ function renderEventsTable(events) {
             <th>Evento</th>
             <th>Fecha y hora</th>
             <th>Modalidad</th>
-            <th>Lugar</th>
+            <th>Lugar y contacto</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -178,9 +217,65 @@ function showFeedback(type, message) {
   }, 5000);
 }
 
-function openEventModal() {
+function ensureSelectOption(select, value) {
+  if (!select || !value) return;
+
+  const exists = Array.from(select.options).some((option) => option.value === value);
+  if (!exists) select.add(new Option(value, value));
+}
+
+function renderStatusOptions(isEditing) {
+  const values = isEditing
+    ? ["draft", "published", "finished", "cancelled"]
+    : ["draft", "published"];
+
+  return values
+    .map((value) => `<option value="${value}">${STATUS_LABELS[value]}</option>`)
+    .join("");
+}
+
+function openEventModal(eventItem = null) {
   const modal = document.getElementById("event-modal");
-  if (!modal) return;
+  const form = document.getElementById("event-form");
+  const heading = document.getElementById("event-modal-title");
+  const eyebrow = document.getElementById("event-modal-eyebrow");
+  const description = document.getElementById("event-modal-description");
+  const statusSelect = form?.elements.namedItem("status");
+
+  if (!modal || !form || !statusSelect) return;
+
+  form.reset();
+  form.dataset.eventId = eventItem ? String(eventItem.id) : "";
+  statusSelect.innerHTML = renderStatusOptions(Boolean(eventItem));
+
+  if (heading) heading.textContent = eventItem ? "Editar evento" : "Crear evento";
+  if (eyebrow) eyebrow.textContent = eventItem ? "EDITAR REGISTRO" : "NUEVO REGISTRO";
+  if (description) {
+    description.textContent = eventItem
+      ? "Actualiza la informacion del evento y guarda los cambios."
+      : "Completa la informacion que se guardara en PostgreSQL.";
+  }
+
+  if (eventItem) {
+    ensureSelectOption(form.elements.namedItem("eventType"), eventItem.eventType);
+    form.elements.namedItem("title").value = eventItem.title || "";
+    form.elements.namedItem("description").value = eventItem.description || "";
+    form.elements.namedItem("eventType").value = eventItem.eventType || "";
+    form.elements.namedItem("location").value = eventItem.location || "";
+    form.elements.namedItem("startAt").value = toPanamaInputValue(eventItem.startAt);
+    form.elements.namedItem("endAt").value = toPanamaInputValue(eventItem.endAt);
+    form.elements.namedItem("modality").value = eventItem.modality || "in_person";
+    form.elements.namedItem("whatsappNumber").value = eventItem.whatsappNumber || "";
+    form.elements.namedItem("whatsappMessage").value = eventItem.whatsappMessage || "";
+    statusSelect.value = eventItem.status || "draft";
+  } else {
+    form.elements.namedItem("modality").value = "in_person";
+    statusSelect.value = "draft";
+  }
+
+  const endInput = form.elements.namedItem("endAt");
+  const startInput = form.elements.namedItem("startAt");
+  if (endInput && startInput) endInput.min = startInput.value;
 
   modal.hidden = false;
   document.body.classList.add("events-modal-open");
@@ -189,12 +284,14 @@ function openEventModal() {
 
 function closeEventModal() {
   const modal = document.getElementById("event-modal");
+  const form = document.getElementById("event-form");
   const formMessage = document.getElementById("event-form-message");
 
   if (!modal) return;
 
   modal.hidden = true;
   document.body.classList.remove("events-modal-open");
+  if (form) form.dataset.eventId = "";
   if (formMessage) formMessage.textContent = "";
 }
 
@@ -223,6 +320,9 @@ function buildEventPayload(form) {
   const eventType = getFormValue(formData, "eventType");
   const startAt = toIsoDate(getFormValue(formData, "startAt"), "La fecha de inicio", true);
   const endAt = toIsoDate(getFormValue(formData, "endAt"), "La fecha final");
+  const status = getFormValue(formData, "status");
+  const rawWhatsappNumber = getFormValue(formData, "whatsappNumber");
+  const whatsappNumber = rawWhatsappNumber.replace(/\D/g, "");
 
   if (!title) throw new Error("El titulo es obligatorio.");
   if (!description) throw new Error("La descripcion es obligatoria.");
@@ -230,6 +330,14 @@ function buildEventPayload(form) {
 
   if (endAt && new Date(endAt) < new Date(startAt)) {
     throw new Error("La fecha final no puede ser anterior a la fecha de inicio.");
+  }
+
+  if (rawWhatsappNumber && (whatsappNumber.length < 8 || whatsappNumber.length > 15)) {
+    throw new Error("El numero de WhatsApp debe incluir codigo de pais y tener entre 8 y 15 digitos.");
+  }
+
+  if (status === "published" && !whatsappNumber) {
+    throw new Error("El numero de WhatsApp es obligatorio para publicar el evento.");
   }
 
   return {
@@ -240,7 +348,9 @@ function buildEventPayload(form) {
     endAt,
     location: getFormValue(formData, "location"),
     modality: getFormValue(formData, "modality"),
-    status: getFormValue(formData, "status")
+    whatsappNumber,
+    whatsappMessage: getFormValue(formData, "whatsappMessage"),
+    status
   };
 }
 
@@ -267,9 +377,11 @@ async function loadEvents() {
 
     if (!currentContent) return;
 
-    currentContent.innerHTML = renderEventsTable(response.events || []);
-    if (count) count.textContent = String(response.count ?? response.events?.length ?? 0);
+    adminEvents = response.events || [];
+    currentContent.innerHTML = renderEventsTable(adminEvents);
+    if (count) count.textContent = String(response.count ?? adminEvents.length);
   } catch (error) {
+    adminEvents = [];
     if (handleUnauthorized(error)) return;
 
     const currentContent = document.getElementById("events-content");
@@ -287,6 +399,8 @@ async function submitEventForm(event) {
   const message = document.getElementById("event-form-message");
   const submitButton = document.getElementById("save-event");
   const session = getSession();
+  const eventId = form.dataset.eventId;
+  const isEditing = Boolean(eventId);
 
   if (!session?.token) {
     clearSession();
@@ -299,17 +413,25 @@ async function submitEventForm(event) {
 
     if (message) message.textContent = "";
     submitButton?.setAttribute("disabled", "");
-    if (submitButton) submitButton.textContent = "Guardando...";
+    if (submitButton) submitButton.textContent = isEditing ? "Actualizando..." : "Guardando...";
 
-    await createAdminEvent(session.token, payload);
+    if (isEditing) {
+      await updateAdminEvent(session.token, eventId, payload);
+    } else {
+      await createAdminEvent(session.token, payload);
+    }
 
     form.reset();
     closeEventModal();
-    showFeedback("success", "Evento creado correctamente.");
+    showFeedback("success", isEditing ? "Evento actualizado correctamente." : "Evento creado correctamente.");
     await loadEvents();
   } catch (error) {
     if (handleUnauthorized(error)) return;
-    if (message) message.textContent = error.message || "No fue posible crear el evento.";
+    if (message) {
+      message.textContent = error.message || (isEditing
+        ? "No fue posible actualizar el evento."
+        : "No fue posible crear el evento.");
+    }
   } finally {
     submitButton?.removeAttribute("disabled");
     if (submitButton) submitButton.textContent = "Guardar evento";
@@ -323,6 +445,13 @@ async function handleEventAction(event) {
   const action = button.dataset.eventAction;
   const eventId = button.dataset.eventId;
   const eventTitle = button.dataset.eventTitle || "este evento";
+
+  if (action === "edit") {
+    const selectedEvent = adminEvents.find((item) => String(item.id) === String(eventId));
+    if (selectedEvent) openEventModal(selectedEvent);
+    return;
+  }
+
   const session = getSession();
 
   if (!session?.token) {
@@ -333,8 +462,8 @@ async function handleEventAction(event) {
 
   const isDelete = action === "delete";
   const confirmationMessage = isDelete
-    ? `Eliminar permanentemente \"${eventTitle}\"? Esta accion no se puede deshacer.`
-    : `Cancelar \"${eventTitle}\"? El registro permanecera en el panel con estado Cancelado.`;
+    ? `Eliminar permanentemente "${eventTitle}"? Esta accion no se puede deshacer.`
+    : `Cancelar "${eventTitle}"? El registro permanecera en el panel con estado Cancelado.`;
 
   if (!window.confirm(confirmationMessage)) return;
 
@@ -369,9 +498,9 @@ function renderEventModal() {
       <section class="event-modal-card" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
         <div class="event-modal-heading">
           <div>
-            <span class="eyebrow">NUEVO REGISTRO</span>
+            <span class="eyebrow" id="event-modal-eyebrow">NUEVO REGISTRO</span>
             <h3 id="event-modal-title">Crear evento</h3>
-            <p>Completa la informacion basica que se guardara en PostgreSQL.</p>
+            <p id="event-modal-description">Completa la informacion que se guardara en PostgreSQL.</p>
           </div>
           <button class="event-modal-close" id="close-event-modal" type="button" aria-label="Cerrar formulario">&times;</button>
         </div>
@@ -426,10 +555,22 @@ function renderEventModal() {
 
             <label class="event-form-field">
               <span>Estado</span>
-              <select name="status" required>
+              <select id="event-status" name="status" required>
                 <option value="draft">Borrador</option>
                 <option value="published">Publicado</option>
               </select>
+            </label>
+
+            <label class="event-form-field event-form-field-wide">
+              <span>Numero de WhatsApp</span>
+              <input name="whatsappNumber" type="tel" maxlength="22" placeholder="Ejemplo: 50761234567" inputmode="tel" />
+              <small>Incluye el codigo de pais. Este numero es obligatorio para publicar.</small>
+            </label>
+
+            <label class="event-form-field event-form-field-wide">
+              <span>Mensaje de WhatsApp</span>
+              <textarea name="whatsappMessage" rows="3" maxlength="500" placeholder="Hola, deseo recibir informacion sobre este evento."></textarea>
+              <small>Si se deja vacio, la API genera un mensaje usando el titulo.</small>
             </label>
           </div>
 
@@ -445,10 +586,16 @@ function renderEventModal() {
   `;
 }
 
+function handleEventEscape(event) {
+  if (event.key === "Escape" && !document.getElementById("event-modal")?.hidden) {
+    closeEventModal();
+  }
+}
+
 export function renderEventsPage() {
   return `
     <section class="page-heading">
-      <div><span class="eyebrow">GESTION DE CONTENIDO</span><h2>Eventos</h2><p>Consulta, crea, cancela y elimina eventos almacenados en PostgreSQL.</p></div>
+      <div><span class="eyebrow">GESTION DE CONTENIDO</span><h2>Eventos</h2><p>Consulta, crea, edita, cancela y elimina eventos almacenados en PostgreSQL.</p></div>
       <div class="events-heading-actions">
         <button class="btn btn-secondary" id="refresh-events" type="button">Actualizar</button>
         <button class="btn btn-primary" id="open-event-modal" type="button">${icon("Plus")}Nuevo evento</button>
@@ -471,7 +618,7 @@ export function renderEventsPage() {
 
 export function initEventsPage() {
   document.getElementById("refresh-events")?.addEventListener("click", loadEvents);
-  document.getElementById("open-event-modal")?.addEventListener("click", openEventModal);
+  document.getElementById("open-event-modal")?.addEventListener("click", () => openEventModal());
   document.getElementById("close-event-modal")?.addEventListener("click", closeEventModal);
   document.getElementById("cancel-event")?.addEventListener("click", closeEventModal);
   document.getElementById("event-form")?.addEventListener("submit", submitEventForm);
@@ -486,11 +633,8 @@ export function initEventsPage() {
     if (endInput) endInput.min = event.target.value;
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !document.getElementById("event-modal")?.hidden) {
-      closeEventModal();
-    }
-  }, { once: true });
+  document.removeEventListener("keydown", handleEventEscape);
+  document.addEventListener("keydown", handleEventEscape);
 
   loadEvents();
 }

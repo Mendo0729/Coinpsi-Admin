@@ -44,6 +44,17 @@ export function createAdminEvent(token, event) {
   });
 }
 
+export function updateAdminEvent(token, eventId, event) {
+  return request(`/${encodeURIComponent(eventId)}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    body: JSON.stringify(event)
+  });
+}
+
 export function cancelAdminEvent(token, eventId) {
   return request(`/${encodeURIComponent(eventId)}/cancel`, {
     method: "PATCH",
