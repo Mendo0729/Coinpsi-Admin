@@ -1,6 +1,9 @@
 import { icon } from "../icons.js";
 import { navigate } from "../router/router.js";
-import { getAdminEvents } from "../services/event.service.js";
+import {
+  createAdminEvent,
+  getAdminEvents
+} from "../services/event.service.js";
 import { clearSession, getSession } from "../services/session.service.js";
 
 const STATUS_LABELS = {
@@ -13,7 +16,7 @@ const STATUS_LABELS = {
 const MODALITY_LABELS = {
   in_person: "Presencial",
   virtual: "Virtual",
-  hybrid: "Híbrido"
+  hybrid: "Hibrido"
 };
 
 function escapeHtml(value) {
@@ -29,11 +32,15 @@ function formatDate(value) {
   if (!value) return "Sin definir";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Fecha inválida";
+  if (Number.isNaN(date.getTime())) return "Fecha invalida";
 
   return new Intl.DateTimeFormat("es-PA", {
-    dateStyle: "medium",
-    timeStyle: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
     timeZone: "America/Panama"
   }).format(date);
 }
@@ -42,7 +49,7 @@ function renderLoadingState() {
   return `
     <div class="events-state events-loading" role="status">
       <span class="events-spinner" aria-hidden="true"></span>
-      <div><strong>Consultando eventos</strong><p>Obteniendo la información desde Coinpsi-API.</p></div>
+      <div><strong>Consultando eventos</strong><p>Obteniendo la informacion desde Coinpsi-API.</p></div>
     </div>
   `;
 }
@@ -51,7 +58,7 @@ function renderEmptyState() {
   return `
     <div class="events-state">
       <span class="events-state-icon">${icon("Calendar")}</span>
-      <div><strong>No hay eventos registrados</strong><p>Los eventos creados aparecerán en esta sección.</p></div>
+      <div><strong>No hay eventos registrados</strong><p>Los eventos creados apareceran en esta seccion.</p></div>
     </div>
   `;
 }
@@ -80,7 +87,7 @@ function renderEventRows(events) {
           <div class="event-primary-cell">
             <strong>${escapeHtml(event.title)}</strong>
             <span>${escapeHtml(event.eventType)}</span>
-            <p>${escapeHtml(event.description || "Sin descripción")}</p>
+            <p>${escapeHtml(event.description || "Sin descripcion")}</p>
             <code>${escapeHtml(event.slug || "")}</code>
           </div>
         </td>
@@ -91,7 +98,7 @@ function renderEventRows(events) {
           </div>
         </td>
         <td><span class="event-modality">${escapeHtml(modality)}</span></td>
-        <td>${escapeHtml(event.location || "Sin ubicación")}</td>
+        <td>${escapeHtml(event.location || "Sin ubicacion")}</td>
         <td><span class="event-status event-status-${escapeHtml(event.status)}">${escapeHtml(status)}</span></td>
       </tr>
     `;
@@ -117,6 +124,94 @@ function renderEventsTable(events) {
       </table>
     </div>
   `;
+}
+
+function handleUnauthorized(error) {
+  if (error.status !== 401 && error.code !== "UNAUTHORIZED") return false;
+
+  clearSession();
+  navigate("/login", { replace: true });
+  return true;
+}
+
+function showFeedback(type, message) {
+  const feedback = document.getElementById("events-feedback");
+  if (!feedback) return;
+
+  feedback.className = `events-feedback events-feedback-${type}`;
+  feedback.textContent = message;
+  feedback.hidden = false;
+
+  window.setTimeout(() => {
+    const currentFeedback = document.getElementById("events-feedback");
+    if (currentFeedback) currentFeedback.hidden = true;
+  }, 5000);
+}
+
+function openEventModal() {
+  const modal = document.getElementById("event-modal");
+  if (!modal) return;
+
+  modal.hidden = false;
+  document.body.classList.add("events-modal-open");
+  document.getElementById("event-title")?.focus();
+}
+
+function closeEventModal() {
+  const modal = document.getElementById("event-modal");
+  const formMessage = document.getElementById("event-form-message");
+
+  if (!modal) return;
+
+  modal.hidden = true;
+  document.body.classList.remove("events-modal-open");
+  if (formMessage) formMessage.textContent = "";
+}
+
+function getFormValue(formData, fieldName) {
+  return String(formData.get(fieldName) ?? "").trim();
+}
+
+function toIsoDate(value, fieldLabel, required = false) {
+  if (!value) {
+    if (required) throw new Error(`${fieldLabel} es obligatoria.`);
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${fieldLabel} no es valida.`);
+  }
+
+  return date.toISOString();
+}
+
+function buildEventPayload(form) {
+  const formData = new FormData(form);
+  const title = getFormValue(formData, "title");
+  const description = getFormValue(formData, "description");
+  const eventType = getFormValue(formData, "eventType");
+  const startAt = toIsoDate(getFormValue(formData, "startAt"), "La fecha de inicio", true);
+  const endAt = toIsoDate(getFormValue(formData, "endAt"), "La fecha final");
+
+  if (!title) throw new Error("El titulo es obligatorio.");
+  if (!description) throw new Error("La descripcion es obligatoria.");
+  if (!eventType) throw new Error("El tipo de evento es obligatorio.");
+
+  if (endAt && new Date(endAt) < new Date(startAt)) {
+    throw new Error("La fecha final no puede ser anterior a la fecha de inicio.");
+  }
+
+  return {
+    title,
+    description,
+    eventType,
+    startAt,
+    endAt,
+    location: getFormValue(formData, "location"),
+    modality: getFormValue(formData, "modality"),
+    status: getFormValue(formData, "status")
+  };
 }
 
 async function loadEvents() {
@@ -145,11 +240,7 @@ async function loadEvents() {
     currentContent.innerHTML = renderEventsTable(response.events || []);
     if (count) count.textContent = String(response.count ?? response.events?.length ?? 0);
   } catch (error) {
-    if (error.status === 401 || error.code === "UNAUTHORIZED") {
-      clearSession();
-      navigate("/login", { replace: true });
-      return;
-    }
+    if (handleUnauthorized(error)) return;
 
     const currentContent = document.getElementById("events-content");
     if (currentContent) currentContent.innerHTML = renderErrorState(error.message);
@@ -159,15 +250,135 @@ async function loadEvents() {
   }
 }
 
+async function submitEventForm(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const message = document.getElementById("event-form-message");
+  const submitButton = document.getElementById("save-event");
+  const session = getSession();
+
+  if (!session?.token) {
+    clearSession();
+    navigate("/login", { replace: true });
+    return;
+  }
+
+  try {
+    const payload = buildEventPayload(form);
+
+    if (message) message.textContent = "";
+    submitButton?.setAttribute("disabled", "");
+    if (submitButton) submitButton.textContent = "Guardando...";
+
+    await createAdminEvent(session.token, payload);
+
+    form.reset();
+    closeEventModal();
+    showFeedback("success", "Evento creado correctamente.");
+    await loadEvents();
+  } catch (error) {
+    if (handleUnauthorized(error)) return;
+    if (message) message.textContent = error.message || "No fue posible crear el evento.";
+  } finally {
+    submitButton?.removeAttribute("disabled");
+    if (submitButton) submitButton.textContent = "Guardar evento";
+  }
+}
+
+function renderEventModal() {
+  return `
+    <div class="event-modal" id="event-modal" hidden>
+      <section class="event-modal-card" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+        <div class="event-modal-heading">
+          <div>
+            <span class="eyebrow">NUEVO REGISTRO</span>
+            <h3 id="event-modal-title">Crear evento</h3>
+            <p>Completa la informacion basica que se guardara en PostgreSQL.</p>
+          </div>
+          <button class="event-modal-close" id="close-event-modal" type="button" aria-label="Cerrar formulario">&times;</button>
+        </div>
+
+        <form id="event-form" novalidate>
+          <div class="event-form-grid">
+            <label class="event-form-field event-form-field-wide">
+              <span>Titulo</span>
+              <input id="event-title" name="title" type="text" maxlength="160" placeholder="Ejemplo: Taller de manejo del estres" required />
+            </label>
+
+            <label class="event-form-field event-form-field-wide">
+              <span>Descripcion</span>
+              <textarea name="description" rows="4" maxlength="2000" placeholder="Describe el objetivo y contenido del evento" required></textarea>
+            </label>
+
+            <label class="event-form-field">
+              <span>Tipo de evento</span>
+              <select name="eventType" required>
+                <option value="">Seleccionar</option>
+                <option value="Taller">Taller</option>
+                <option value="Conferencia">Conferencia</option>
+                <option value="Feria de salud">Feria de salud</option>
+                <option value="Actividad grupal">Actividad grupal</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </label>
+
+            <label class="event-form-field">
+              <span>Lugar</span>
+              <input name="location" type="text" maxlength="180" placeholder="Ejemplo: Sede COINPSI" />
+            </label>
+
+            <label class="event-form-field">
+              <span>Fecha y hora de inicio</span>
+              <input id="event-start-at" name="startAt" type="datetime-local" required />
+            </label>
+
+            <label class="event-form-field">
+              <span>Fecha y hora final</span>
+              <input id="event-end-at" name="endAt" type="datetime-local" />
+            </label>
+
+            <label class="event-form-field">
+              <span>Modalidad</span>
+              <select name="modality" required>
+                <option value="in_person">Presencial</option>
+                <option value="virtual">Virtual</option>
+                <option value="hybrid">Hibrido</option>
+              </select>
+            </label>
+
+            <label class="event-form-field">
+              <span>Estado</span>
+              <select name="status" required>
+                <option value="draft">Borrador</option>
+                <option value="published">Publicado</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="event-form-message" id="event-form-message" role="alert"></div>
+
+          <div class="event-form-actions">
+            <button class="btn btn-secondary" id="cancel-event" type="button">Cancelar</button>
+            <button class="btn btn-primary" id="save-event" type="submit">Guardar evento</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  `;
+}
+
 export function renderEventsPage() {
   return `
     <section class="page-heading">
-      <div><span class="eyebrow">GESTIÓN DE CONTENIDO</span><h2>Eventos</h2><p>Consulta los talleres, conferencias, ferias y actividades almacenados en PostgreSQL.</p></div>
+      <div><span class="eyebrow">GESTION DE CONTENIDO</span><h2>Eventos</h2><p>Consulta y crea talleres, conferencias, ferias y actividades almacenados en PostgreSQL.</p></div>
       <div class="events-heading-actions">
         <button class="btn btn-secondary" id="refresh-events" type="button">Actualizar</button>
-        <button class="btn btn-primary" type="button" disabled title="El formulario se habilitará en la siguiente fase">${icon("Plus")}Nuevo evento</button>
+        <button class="btn btn-primary" id="open-event-modal" type="button">${icon("Plus")}Nuevo evento</button>
       </div>
     </section>
+
+    <div class="events-feedback" id="events-feedback" role="status" hidden></div>
 
     <section class="panel-card events-panel">
       <div class="events-panel-heading">
@@ -176,10 +387,32 @@ export function renderEventsPage() {
       </div>
       <div id="events-content">${renderLoadingState()}</div>
     </section>
+
+    ${renderEventModal()}
   `;
 }
 
 export function initEventsPage() {
   document.getElementById("refresh-events")?.addEventListener("click", loadEvents);
+  document.getElementById("open-event-modal")?.addEventListener("click", openEventModal);
+  document.getElementById("close-event-modal")?.addEventListener("click", closeEventModal);
+  document.getElementById("cancel-event")?.addEventListener("click", closeEventModal);
+  document.getElementById("event-form")?.addEventListener("submit", submitEventForm);
+
+  document.getElementById("event-modal")?.addEventListener("click", (event) => {
+    if (event.target.id === "event-modal") closeEventModal();
+  });
+
+  document.getElementById("event-start-at")?.addEventListener("change", (event) => {
+    const endInput = document.getElementById("event-end-at");
+    if (endInput) endInput.min = event.target.value;
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.getElementById("event-modal")?.hidden) {
+      closeEventModal();
+    }
+  }, { once: true });
+
   loadEvents();
 }
