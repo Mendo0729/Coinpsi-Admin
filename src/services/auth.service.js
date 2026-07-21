@@ -29,10 +29,10 @@ async function request(path, options = {}) {
   return data;
 }
 
-export async function loginAdmin(email, password) {
+export async function loginAdmin(username, password) {
   return request("/login", {
     method: "POST",
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ username, password })
   });
 }
 
