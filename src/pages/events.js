@@ -1,7 +1,9 @@
 import { icon } from "../icons.js";
 import { navigate } from "../router/router.js";
 import {
+  cancelAdminEvent,
   createAdminEvent,
+  deleteAdminEvent,
   getAdminEvents
 } from "../services/event.service.js";
 import { clearSession, getSession } from "../services/session.service.js";
@@ -76,6 +78,32 @@ function renderErrorState(message) {
   `;
 }
 
+function renderEventActions(event) {
+  const eventId = escapeHtml(event.id);
+  const eventTitle = escapeHtml(event.title);
+  const isCancelled = event.status === "cancelled";
+
+  return `
+    <div class="event-actions">
+      <button
+        class="event-action-button event-action-cancel"
+        type="button"
+        data-event-action="cancel"
+        data-event-id="${eventId}"
+        data-event-title="${eventTitle}"
+        ${isCancelled ? "disabled" : ""}
+      >${isCancelled ? "Cancelado" : "Cancelar"}</button>
+      <button
+        class="event-action-button event-action-delete"
+        type="button"
+        data-event-action="delete"
+        data-event-id="${eventId}"
+        data-event-title="${eventTitle}"
+      >Eliminar</button>
+    </div>
+  `;
+}
+
 function renderEventRows(events) {
   return events.map((event) => {
     const status = STATUS_LABELS[event.status] || event.status || "Sin estado";
@@ -100,6 +128,7 @@ function renderEventRows(events) {
         <td><span class="event-modality">${escapeHtml(modality)}</span></td>
         <td>${escapeHtml(event.location || "Sin ubicacion")}</td>
         <td><span class="event-status event-status-${escapeHtml(event.status)}">${escapeHtml(status)}</span></td>
+        <td>${renderEventActions(event)}</td>
       </tr>
     `;
   }).join("");
@@ -118,6 +147,7 @@ function renderEventsTable(events) {
             <th>Modalidad</th>
             <th>Lugar</th>
             <th>Estado</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>${renderEventRows(events)}</tbody>
@@ -286,6 +316,53 @@ async function submitEventForm(event) {
   }
 }
 
+async function handleEventAction(event) {
+  const button = event.target.closest("[data-event-action]");
+  if (!button) return;
+
+  const action = button.dataset.eventAction;
+  const eventId = button.dataset.eventId;
+  const eventTitle = button.dataset.eventTitle || "este evento";
+  const session = getSession();
+
+  if (!session?.token) {
+    clearSession();
+    navigate("/login", { replace: true });
+    return;
+  }
+
+  const isDelete = action === "delete";
+  const confirmationMessage = isDelete
+    ? `Eliminar permanentemente \"${eventTitle}\"? Esta accion no se puede deshacer.`
+    : `Cancelar \"${eventTitle}\"? El registro permanecera en el panel con estado Cancelado.`;
+
+  if (!window.confirm(confirmationMessage)) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = isDelete ? "Eliminando..." : "Cancelando...";
+
+  try {
+    if (isDelete) {
+      await deleteAdminEvent(session.token, eventId);
+      showFeedback("success", "Evento eliminado correctamente.");
+    } else {
+      await cancelAdminEvent(session.token, eventId);
+      showFeedback("success", "Evento cancelado correctamente.");
+    }
+
+    await loadEvents();
+  } catch (error) {
+    if (handleUnauthorized(error)) return;
+    showFeedback("error", error.message || "No fue posible completar la accion.");
+  } finally {
+    if (button.isConnected) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
 function renderEventModal() {
   return `
     <div class="event-modal" id="event-modal" hidden>
@@ -371,7 +448,7 @@ function renderEventModal() {
 export function renderEventsPage() {
   return `
     <section class="page-heading">
-      <div><span class="eyebrow">GESTION DE CONTENIDO</span><h2>Eventos</h2><p>Consulta y crea talleres, conferencias, ferias y actividades almacenados en PostgreSQL.</p></div>
+      <div><span class="eyebrow">GESTION DE CONTENIDO</span><h2>Eventos</h2><p>Consulta, crea, cancela y elimina eventos almacenados en PostgreSQL.</p></div>
       <div class="events-heading-actions">
         <button class="btn btn-secondary" id="refresh-events" type="button">Actualizar</button>
         <button class="btn btn-primary" id="open-event-modal" type="button">${icon("Plus")}Nuevo evento</button>
@@ -398,6 +475,7 @@ export function initEventsPage() {
   document.getElementById("close-event-modal")?.addEventListener("click", closeEventModal);
   document.getElementById("cancel-event")?.addEventListener("click", closeEventModal);
   document.getElementById("event-form")?.addEventListener("submit", submitEventForm);
+  document.getElementById("events-content")?.addEventListener("click", handleEventAction);
 
   document.getElementById("event-modal")?.addEventListener("click", (event) => {
     if (event.target.id === "event-modal") closeEventModal();
