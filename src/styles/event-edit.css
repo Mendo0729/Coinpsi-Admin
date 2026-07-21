@@ -1,0 +1,36 @@
+.event-contact-cell {
+  min-width: 185px;
+  display: grid;
+  gap: 5px;
+}
+
+.event-contact-cell span {
+  color: var(--slate-700);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.event-contact-cell small {
+  color: var(--slate-500);
+  font-size: 0.66rem;
+}
+
+.event-actions {
+  min-width: 225px;
+}
+
+.event-action-edit {
+  color: var(--blue-600);
+}
+
+.event-action-edit:hover:not(:disabled) {
+  border-color: #bfdbfe;
+  background: var(--blue-50);
+}
+
+.event-form-field > small {
+  margin-top: -2px;
+  color: var(--slate-500);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
