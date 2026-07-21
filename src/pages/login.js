@@ -30,8 +30,8 @@ export function renderLoginPage() {
           <p>Ingresa tus credenciales para acceder al panel.</p>
 
           <label class="form-field">
-            <span>Correo electrónico</span>
-            <input id="login-email" name="email" type="email" autocomplete="email" placeholder="administracion@coinpsi.com" required />
+            <span>Usuario</span>
+            <input id="login-username" name="username" type="text" autocomplete="username" placeholder="admin" minlength="3" maxlength="50" required />
           </label>
 
           <label class="form-field">
@@ -60,11 +60,11 @@ export function initLoginPage() {
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const email = form.email.value.trim().toLowerCase();
+    const username = form.username.value.trim().toLowerCase();
     const password = form.password.value;
 
-    if (!email || !email.includes("@")) {
-      message.textContent = "Ingresa un correo electrónico válido.";
+    if (!/^[a-z0-9._-]{3,50}$/.test(username)) {
+      message.textContent = "Ingresa un usuario válido.";
       return;
     }
 
@@ -78,12 +78,12 @@ export function initLoginPage() {
     submitButton.querySelector("span").textContent = "Validando...";
 
     try {
-      const response = await loginAdmin(email, password);
+      const response = await loginAdmin(username, password);
       saveSession(response.token, response.user);
       navigate("/dashboard", { replace: true });
     } catch (error) {
       if (error.code === "INVALID_CREDENTIALS") {
-        message.textContent = "Correo o contraseña incorrectos.";
+        message.textContent = "Usuario o contraseña incorrectos.";
       } else if (error.code === "API_UNAVAILABLE") {
         message.textContent = "No se pudo conectar con Coinpsi-API. Verifica que la API esté encendida.";
       } else {
