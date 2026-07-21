@@ -46,7 +46,7 @@
 
 .events-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1120px;
   border-collapse: collapse;
 }
 
@@ -166,6 +166,51 @@
 .event-status-cancelled {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+.event-actions {
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-action-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+  background: var(--white);
+  font-size: 0.68rem;
+  font-weight: 800;
+  transition: 160ms ease;
+}
+
+.event-action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.event-action-cancel {
+  color: #92400e;
+}
+
+.event-action-cancel:hover:not(:disabled) {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.event-action-delete {
+  color: var(--danger);
+}
+
+.event-action-delete:hover:not(:disabled) {
+  border-color: #fecaca;
+  background: var(--danger-soft);
+}
+
+.event-action-button:disabled {
+  background: var(--slate-100);
+  color: var(--slate-400);
 }
 
 .events-state {
