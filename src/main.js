@@ -2,7 +2,7 @@ import { startRouter } from "./router/router.js";
 import { renderAdminLayout, initAdminLayout } from "./components/layout/adminLayout.js";
 import { renderLoginPage, initLoginPage } from "./pages/login.js";
 import { renderDashboardPage } from "./pages/dashboard.js";
-import { renderEventsPage } from "./pages/events.js";
+import { renderEventsPage, initEventsPage } from "./pages/events.js";
 import { renderGalleryPage } from "./pages/gallery.js";
 import { renderGallerySettingsPage } from "./pages/gallerySettings.js";
 import { renderNotFoundPage } from "./pages/notFound.js";
@@ -12,7 +12,7 @@ const app = document.getElementById("app");
 
 const routes = {
   "/dashboard": { title: "Inicio", render: renderDashboardPage },
-  "/eventos": { title: "Eventos", render: renderEventsPage },
+  "/eventos": { title: "Eventos", render: renderEventsPage, init: initEventsPage },
   "/galeria": { title: "Galería", render: renderGalleryPage },
   "/galeria/configuracion": { title: "Configuración de galería", render: renderGallerySettingsPage }
 };
@@ -34,6 +34,7 @@ function renderRoute(path) {
   document.title = `${title} | COINPSI Administración`;
   app.innerHTML = renderAdminLayout({ title, activePath: path, content });
   initAdminLayout();
+  route?.init?.();
 }
 
 async function bootstrap() {

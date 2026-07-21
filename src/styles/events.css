@@ -1,1 +1,257 @@
-/* Administración de eventos */
+.events-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.events-panel {
+  overflow: hidden;
+}
+
+.events-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--slate-150);
+}
+
+.events-panel-heading h3 {
+  margin: 7px 0 0;
+  color: var(--navy-900);
+  font: 700 1.2rem/1.2 var(--font-display);
+}
+
+.events-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--blue-50);
+  color: var(--blue-700);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.events-count strong {
+  font-size: 1rem;
+}
+
+.events-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.events-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.events-table th,
+.events-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--slate-150);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.events-table th {
+  background: var(--slate-50);
+  color: var(--slate-500);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.events-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.events-table tbody tr:hover {
+  background: rgb(248 250 252 / 0.8);
+}
+
+.event-primary-cell {
+  min-width: 280px;
+  display: grid;
+  gap: 5px;
+}
+
+.event-primary-cell strong {
+  color: var(--navy-900);
+  font: 700 0.95rem/1.3 var(--font-display);
+}
+
+.event-primary-cell > span {
+  color: var(--blue-600);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.event-primary-cell p {
+  max-width: 390px;
+  margin: 2px 0 0;
+  color: var(--slate-600);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.event-primary-cell code {
+  width: fit-content;
+  max-width: 390px;
+  overflow: hidden;
+  color: var(--slate-400);
+  font: 500 0.64rem/1.4 var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-date-cell {
+  min-width: 205px;
+  display: grid;
+  gap: 9px;
+}
+
+.event-date-cell span {
+  display: grid;
+  gap: 2px;
+  color: var(--slate-700);
+  font-size: 0.74rem;
+}
+
+.event-date-cell strong {
+  color: var(--slate-400);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.event-modality,
+.event-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 29px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.event-modality {
+  background: var(--slate-100);
+  color: var(--slate-700);
+}
+
+.event-status-draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.event-status-published {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.event-status-finished {
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+
+.event-status-cancelled {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.events-state {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 38px;
+  color: var(--slate-600);
+  text-align: left;
+}
+
+.events-state > div {
+  max-width: 440px;
+}
+
+.events-state strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--navy-900);
+  font: 700 1rem/1.3 var(--font-display);
+}
+
+.events-state p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.events-state .btn {
+  margin-top: 14px;
+}
+
+.events-state-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: var(--blue-50);
+  color: var(--blue-600);
+  font-weight: 800;
+}
+
+.events-state-icon .icon {
+  width: 1.35rem;
+}
+
+.events-error .events-state-icon {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.events-spinner {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 3px solid var(--slate-200);
+  border-top-color: var(--blue-500);
+  border-radius: 999px;
+  animation: events-spin 0.8s linear infinite;
+}
+
+@keyframes events-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .events-heading-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .events-panel-heading {
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .events-state {
+    min-height: 240px;
+    align-items: flex-start;
+    padding: 32px 22px;
+  }
+}
