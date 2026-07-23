@@ -48,10 +48,14 @@ export function runGoogleDriveTest(token) {
   });
 }
 
-export function getGoogleDriveFolder(token, folderId) {
+export function getGoogleDriveFolder(token, folderId, pageToken = null) {
+  const query = pageToken
+    ? `?pageToken=${encodeURIComponent(pageToken)}`
+    : "";
+
   return requestJson(
     DRIVE_API_BASE_URL,
-    `/folders/${encodeURIComponent(folderId)}`,
+    `/folders/${encodeURIComponent(folderId)}${query}`,
     token,
     { method: "GET" }
   );
