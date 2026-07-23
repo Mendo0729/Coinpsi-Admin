@@ -11,6 +11,8 @@ import {
 } from "../services/google-drive.service.js";
 import { clearSession, getSession } from "../services/session.service.js";
 
+const SELECTED_PAGE_SIZE = 20;
+
 const state = {
   drive: null,
   currentFolder: null,
@@ -18,7 +20,13 @@ const state = {
   folderStack: [],
   selected: new Map(),
   previewUrls: new Map(),
-  loadingFolder: false
+  previewPromises: new Map(),
+  loadingFolder: false,
+  imagePageIndex: 0,
+  imagePageTokens: [null],
+  nextImagePageToken: null,
+  imagePageSize: 20,
+  selectedPage: 1
 };
 
 let driveMessageHandler = null;
@@ -73,6 +81,26 @@ function handleUnauthorized(error) {
 function clearPreviewUrls() {
   state.previewUrls.forEach((url) => URL.revokeObjectURL(url));
   state.previewUrls.clear();
+  state.previewPromises.clear();
+}
+
+function resetImagePagination() {
+  state.imagePageIndex = 0;
+  state.imagePageTokens = [null];
+  state.nextImagePageToken = null;
+}
+
+function getSelectedPagination() {
+  const items = Array.from(state.selected.values());
+  const totalPages = Math.max(1, Math.ceil(items.length / SELECTED_PAGE_SIZE));
+  state.selectedPage = Math.min(Math.max(1, state.selectedPage), totalPages);
+
+  const start = (state.selectedPage - 1) * SELECTED_PAGE_SIZE;
+  return {
+    items,
+    pageItems: items.slice(start, start + SELECTED_PAGE_SIZE),
+    totalPages
+  };
 }
 
 function renderConnection() {
@@ -112,12 +140,27 @@ function renderConnection() {
       <div>
         <span class="drive-status-pill connected">Conectado</span>
         <h3>${escapeHtml(drive.rootFolder?.name || "Google Drive")}</h3>
-        <p>Ya puedes navegar por las carpetas, ver las imagenes y escoger cuales aparecen en la landing.</p>
+        <p>Las imagenes se cargan en paginas de 20 para mantener el panel fluido.</p>
       </div>
       <dl class="drive-details">
         <div><dt>Cuenta</dt><dd>${escapeHtml(drive.account?.emailAddress || "Cuenta autorizada")}</dd></div>
-        <div><dt>Elementos raiz</dt><dd>${Array.isArray(drive.items) ? drive.items.length : 0}</dd></div>
+        <div><dt>Tamano de pagina</dt><dd>20 imagenes</dd></div>
       </dl>
+    </div>
+  `;
+}
+
+function renderImagePagination() {
+  const hasPrevious = state.imagePageIndex > 0;
+  const hasNext = Boolean(state.nextImagePageToken);
+
+  if (!hasPrevious && !hasNext) return "";
+
+  return `
+    <div class="gallery-pagination" aria-label="Paginacion de imagenes">
+      <button class="btn btn-secondary" type="button" data-image-page="previous" ${hasPrevious ? "" : "disabled"}>Anterior</button>
+      <span>Pagina ${state.imagePageIndex + 1} · ${state.imagePageSize} imagenes por pagina</span>
+      <button class="btn btn-secondary" type="button" data-image-page="next" ${hasNext ? "" : "disabled"}>Siguiente</button>
     </div>
   `;
 }
@@ -135,7 +178,7 @@ function renderFolderBrowser() {
     container.innerHTML = `
       <div class="drive-state compact">
         <span class="drive-spinner" aria-hidden="true"></span>
-        <div><strong>Cargando carpeta</strong><p>Consultando Google Drive y preparando las vistas previas.</p></div>
+        <div><strong>Cargando pagina</strong><p>Consultando hasta 20 imagenes y preparando sus vistas previas.</p></div>
       </div>
     `;
     return;
@@ -144,7 +187,7 @@ function renderFolderBrowser() {
   const folders = state.items.filter((item) => item.isFolder);
   const images = state.items.filter((item) => item.isImage);
 
-  if (!folders.length && !images.length) {
+  if (!folders.length && !images.length && state.imagePageIndex === 0) {
     container.innerHTML = `
       <div class="drive-state compact">
         <span class="drive-state-icon">0</span>
@@ -170,12 +213,13 @@ function renderFolderBrowser() {
       </div>
     ` : ""}
 
-    ${images.length ? `
-      <div class="gallery-browser-group">
-        <div class="gallery-browser-title-row">
-          <h4>Imagenes</h4>
-          <span>${images.length} disponibles</span>
-        </div>
+    <div class="gallery-browser-group">
+      <div class="gallery-browser-title-row">
+        <h4>Imagenes</h4>
+        <span>${images.length} cargadas en esta pagina</span>
+      </div>
+
+      ${images.length ? `
         <div class="gallery-image-picker-grid">
           ${images.map((image) => {
             const selected = state.selected.has(image.id);
@@ -195,24 +239,43 @@ function renderFolderBrowser() {
             `;
           }).join("")}
         </div>
-      </div>
-    ` : ""}
+      ` : `
+        <div class="drive-state compact gallery-page-empty">
+          <span class="drive-state-icon">0</span>
+          <div><strong>No hay imagenes en esta pagina</strong><p>Regresa a la pagina anterior.</p></div>
+        </div>
+      `}
+
+      ${renderImagePagination()}
+    </div>
   `;
 
   hydratePreviews(container);
+}
+
+function renderSelectedPagination(totalPages) {
+  if (totalPages <= 1) return "";
+
+  return `
+    <div class="gallery-pagination gallery-selected-pagination" aria-label="Paginacion de seleccion">
+      <button class="btn btn-secondary" type="button" data-selected-page="previous" ${state.selectedPage > 1 ? "" : "disabled"}>Anterior</button>
+      <span>Pagina ${state.selectedPage} de ${totalPages} · ${SELECTED_PAGE_SIZE} por pagina</span>
+      <button class="btn btn-secondary" type="button" data-selected-page="next" ${state.selectedPage < totalPages ? "" : "disabled"}>Siguiente</button>
+    </div>
+  `;
 }
 
 function renderSelection() {
   const container = document.getElementById("gallery-selection-content");
   const count = document.getElementById("gallery-selection-count");
   const saveButton = document.getElementById("gallery-save-button");
-  const items = Array.from(state.selected.values());
+  const pagination = getSelectedPagination();
 
-  if (count) count.textContent = String(items.length);
+  if (count) count.textContent = String(pagination.items.length);
   if (saveButton) saveButton.disabled = !state.drive?.connected;
   if (!container) return;
 
-  if (!items.length) {
+  if (!pagination.items.length) {
     container.innerHTML = `
       <div class="drive-state compact">
         <span class="drive-state-icon">0</span>
@@ -222,9 +285,11 @@ function renderSelection() {
     return;
   }
 
+  const pageOffset = (state.selectedPage - 1) * SELECTED_PAGE_SIZE;
+
   container.innerHTML = `
     <div class="gallery-selected-grid">
-      ${items.map((item, index) => `
+      ${pagination.pageItems.map((item, index) => `
         <article class="gallery-selected-card">
           <div class="gallery-selected-preview">
             <img data-drive-preview="${escapeHtml(item.fileId)}" alt="${escapeHtml(item.title || item.name)}" />
@@ -243,15 +308,34 @@ function renderSelection() {
             </label>
           </div>
           <div class="gallery-selected-actions">
-            <span>#${index + 1}</span>
+            <span>#${pageOffset + index + 1}</span>
             <button class="btn btn-danger-outline" type="button" data-remove-selected="${escapeHtml(item.fileId)}">Quitar</button>
           </div>
         </article>
       `).join("")}
     </div>
+    ${renderSelectedPagination(pagination.totalPages)}
   `;
 
   hydratePreviews(container);
+}
+
+async function getPreviewUrl(token, fileId) {
+  if (state.previewUrls.has(fileId)) return state.previewUrls.get(fileId);
+  if (state.previewPromises.has(fileId)) return state.previewPromises.get(fileId);
+
+  const promise = getGoogleDriveImageBlob(token, fileId)
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      state.previewUrls.set(fileId, objectUrl);
+      return objectUrl;
+    })
+    .finally(() => {
+      state.previewPromises.delete(fileId);
+    });
+
+  state.previewPromises.set(fileId, promise);
+  return promise;
 }
 
 async function hydratePreviews(scope) {
@@ -263,17 +347,8 @@ async function hydratePreviews(scope) {
     const fileId = imageElement.dataset.drivePreview;
     const loading = imageElement.parentElement?.querySelector(".gallery-preview-loading");
 
-    if (state.previewUrls.has(fileId)) {
-      imageElement.src = state.previewUrls.get(fileId);
-      if (loading) loading.hidden = true;
-      return;
-    }
-
     try {
-      const blob = await getGoogleDriveImageBlob(session.token, fileId);
-      const objectUrl = URL.createObjectURL(blob);
-      state.previewUrls.set(fileId, objectUrl);
-      imageElement.src = objectUrl;
+      imageElement.src = await getPreviewUrl(session.token, fileId);
       if (loading) loading.hidden = true;
     } catch {
       if (loading) loading.textContent = "Vista previa no disponible";
@@ -281,17 +356,28 @@ async function hydratePreviews(scope) {
   }));
 }
 
-async function loadFolder(folderId, pushHistory = true) {
+async function loadFolder(
+  folderId,
+  {
+    pushHistory = true,
+    pageToken = null,
+    resetPagination = true
+  } = {}
+) {
   const session = getSession();
   if (!session?.token) return;
 
+  if (resetPagination) resetImagePagination();
+  clearPreviewUrls();
   state.loadingFolder = true;
   renderFolderBrowser();
 
   try {
-    const response = await getGoogleDriveFolder(session.token, folderId);
+    const response = await getGoogleDriveFolder(session.token, folderId, pageToken);
     state.currentFolder = response.folder;
     state.items = response.items || [];
+    state.imagePageSize = Number(response.pagination?.pageSize || 20);
+    state.nextImagePageToken = response.pagination?.nextPageToken || null;
 
     if (pushHistory) {
       const last = state.folderStack[state.folderStack.length - 1];
@@ -303,9 +389,11 @@ async function loadFolder(folderId, pushHistory = true) {
     if (handleUnauthorized(error)) return;
     showFeedback("error", error.message);
     state.items = [];
+    state.nextImagePageToken = null;
   } finally {
     state.loadingFolder = false;
     renderFolderBrowser();
+    renderSelection();
   }
 }
 
@@ -325,6 +413,7 @@ async function loadInitialData() {
     state.selected = new Map(
       (selectionResponse.selection?.items || []).map((item) => [item.fileId, item])
     );
+    state.selectedPage = 1;
 
     renderConnection();
     renderSelection();
@@ -338,7 +427,10 @@ async function loadInitialData() {
 
     if (state.drive.connected && state.drive.rootFolder?.id) {
       state.folderStack = [];
-      await loadFolder(state.drive.rootFolder.id, true);
+      await loadFolder(state.drive.rootFolder.id, {
+        pushHistory: true,
+        resetPagination: true
+      });
     }
 
     hideFeedback();
@@ -417,16 +509,75 @@ async function handleSaveSelection() {
   }
 }
 
+async function changeImagePage(direction) {
+  if (!state.currentFolder?.id || state.loadingFolder) return;
+
+  if (direction === "next") {
+    if (!state.nextImagePageToken) return;
+
+    state.imagePageTokens = state.imagePageTokens.slice(0, state.imagePageIndex + 1);
+    state.imagePageTokens.push(state.nextImagePageToken);
+    state.imagePageIndex += 1;
+
+    await loadFolder(state.currentFolder.id, {
+      pushHistory: false,
+      pageToken: state.imagePageTokens[state.imagePageIndex],
+      resetPagination: false
+    });
+    return;
+  }
+
+  if (direction === "previous" && state.imagePageIndex > 0) {
+    state.imagePageIndex -= 1;
+
+    await loadFolder(state.currentFolder.id, {
+      pushHistory: false,
+      pageToken: state.imagePageTokens[state.imagePageIndex],
+      resetPagination: false
+    });
+  }
+}
+
+function changeSelectedPage(direction) {
+  const pagination = getSelectedPagination();
+
+  if (direction === "next" && state.selectedPage < pagination.totalPages) {
+    state.selectedPage += 1;
+  }
+
+  if (direction === "previous" && state.selectedPage > 1) {
+    state.selectedPage -= 1;
+  }
+
+  renderSelection();
+}
+
 function handleBrowserClick(event) {
   const folderButton = event.target.closest("[data-open-folder]");
   if (folderButton) {
-    loadFolder(folderButton.dataset.openFolder, true);
+    loadFolder(folderButton.dataset.openFolder, {
+      pushHistory: true,
+      resetPagination: true
+    });
+    return;
+  }
+
+  const imagePageButton = event.target.closest("[data-image-page]");
+  if (imagePageButton) {
+    changeImagePage(imagePageButton.dataset.imagePage);
+    return;
+  }
+
+  const selectedPageButton = event.target.closest("[data-selected-page]");
+  if (selectedPageButton) {
+    changeSelectedPage(selectedPageButton.dataset.selectedPage);
     return;
   }
 
   const removeButton = event.target.closest("[data-remove-selected]");
   if (removeButton) {
     state.selected.delete(removeButton.dataset.removeSelected);
+    getSelectedPagination();
     renderFolderBrowser();
     renderSelection();
   }
@@ -449,8 +600,10 @@ function handleBrowserChange(event) {
         folderName: state.currentFolder?.name || null,
         isFeatured: false
       });
+      state.selectedPage = Math.max(1, Math.ceil(state.selected.size / SELECTED_PAGE_SIZE));
     } else {
       state.selected.delete(fileId);
+      getSelectedPagination();
     }
 
     renderFolderBrowser();
@@ -483,7 +636,10 @@ function handleBack() {
   if (state.folderStack.length <= 1) return;
   state.folderStack.pop();
   const previous = state.folderStack[state.folderStack.length - 1];
-  loadFolder(previous.id, false);
+  loadFolder(previous.id, {
+    pushHistory: false,
+    resetPagination: true
+  });
 }
 
 export function renderGalleryPage() {
@@ -492,7 +648,7 @@ export function renderGalleryPage() {
       <div>
         <span class="eyebrow">GESTION VISUAL</span>
         <h2>Galeria desde Google Drive</h2>
-        <p>Navega por las carpetas, mira las fotografias y escoge cuales se muestran en la landing.</p>
+        <p>Navega por las carpetas y revisa las fotografias en paginas de 20 imagenes.</p>
       </div>
       <div class="drive-heading-actions">
         <button class="btn btn-secondary" id="drive-refresh-button" type="button">Actualizar</button>
@@ -544,6 +700,8 @@ export function initGalleryPage() {
   state.items = [];
   state.folderStack = [];
   state.selected = new Map();
+  state.selectedPage = 1;
+  resetImagePagination();
 
   document.getElementById("drive-connect-button")?.addEventListener("click", handleConnect);
   document.getElementById("drive-refresh-button")?.addEventListener("click", loadInitialData);
