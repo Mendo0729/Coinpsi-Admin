@@ -3,7 +3,7 @@ import { renderAdminLayout, initAdminLayout } from "./components/layout/adminLay
 import { renderLoginPage, initLoginPage } from "./pages/login.js";
 import { renderDashboardPage, initDashboardPage } from "./pages/dashboard.js";
 import { renderEventsPage, initEventsPage } from "./pages/events.js";
-import { renderGalleryPage } from "./pages/gallery.js";
+import { renderGalleryPage, initGalleryPage } from "./pages/gallery.js";
 import { renderGallerySettingsPage } from "./pages/gallerySettings.js";
 import { renderNotFoundPage } from "./pages/notFound.js";
 import { validateSession } from "./services/session.service.js";
@@ -13,7 +13,7 @@ const app = document.getElementById("app");
 const routes = {
   "/dashboard": { title: "Inicio", render: renderDashboardPage, init: initDashboardPage },
   "/eventos": { title: "Eventos", render: renderEventsPage, init: initEventsPage },
-  "/galeria": { title: "Galeria", render: renderGalleryPage },
+  "/galeria": { title: "Galeria", render: renderGalleryPage, init: initGalleryPage },
   "/galeria/configuracion": { title: "Configuracion de galeria", render: renderGallerySettingsPage }
 };
 
