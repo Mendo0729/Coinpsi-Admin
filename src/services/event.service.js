@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://localhost:3002/api/v1/admin/events";
+import { APP_CONFIG } from "../config.js";
+
+const API_BASE_URL = `${APP_CONFIG.apiUrl}/admin/events`;
 
 async function request(path = "", options = {}) {
   let response;
