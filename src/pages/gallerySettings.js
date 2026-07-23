@@ -12,7 +12,7 @@ import {
 const DEFAULT_SETTINGS = {
   mode: "manual",
   rotation: "daily",
-  randomCount: 6,
+  displayCount: 8,
   timezone: "America/Panama"
 };
 
@@ -20,15 +20,6 @@ const state = {
   selection: null,
   loading: false
 };
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
 
 function handleUnauthorized(error) {
   if (error.status !== 401 && error.code !== "UNAUTHORIZED") return false;
@@ -51,52 +42,63 @@ function hideFeedback() {
   if (feedback) feedback.hidden = true;
 }
 
+function getFixedCount() {
+  return (state.selection?.items || []).filter((item) => item.isFeatured).length;
+}
+
 function getSettingsFromControls() {
   const mode = document.getElementById("gallery-mode")?.value || DEFAULT_SETTINGS.mode;
   const rotation = document.getElementById("gallery-rotation")?.value || DEFAULT_SETTINGS.rotation;
-  const parsedRandomCount = Number.parseInt(
-    document.getElementById("gallery-random-count")?.value || "",
+  const parsedDisplayCount = Number.parseInt(
+    document.getElementById("gallery-display-count")?.value || "",
     10
   );
 
   return {
     mode,
     rotation,
-    randomCount: Number.isFinite(parsedRandomCount)
-      ? Math.min(60, Math.max(1, parsedRandomCount))
-      : DEFAULT_SETTINGS.randomCount,
+    displayCount: Number.isFinite(parsedDisplayCount)
+      ? Math.min(60, Math.max(1, parsedDisplayCount))
+      : DEFAULT_SETTINGS.displayCount,
     timezone: state.selection?.settings?.timezone || DEFAULT_SETTINGS.timezone
   };
 }
 
 function getGalleryMetrics(settings = getSettingsFromControls()) {
   const items = state.selection?.items || [];
-  const featuredCount = items.filter((item) => item.isFeatured).length;
-  const candidateCount = Math.max(0, items.length - featuredCount);
+  const fixedCount = getFixedCount();
+  const candidateCount = Math.max(0, items.length - fixedCount);
 
   let visibleCount = items.length;
+  let randomFillCount = 0;
+
   if (settings.mode === "random") {
-    visibleCount = Math.min(settings.randomCount, items.length);
+    visibleCount = Math.min(settings.displayCount, items.length);
+    randomFillCount = visibleCount;
   }
+
   if (settings.mode === "mixed") {
-    visibleCount = featuredCount + Math.min(settings.randomCount, candidateCount);
+    const remainingSlots = Math.max(0, settings.displayCount - fixedCount);
+    randomFillCount = Math.min(remainingSlots, candidateCount);
+    visibleCount = fixedCount + randomFillCount;
   }
 
   return {
     enabledCount: items.length,
-    featuredCount,
+    fixedCount,
     candidateCount,
-    visibleCount
+    visibleCount,
+    randomFillCount
   };
 }
 
 function getModeDescription(mode) {
   if (mode === "random") {
-    return "La landing muestra una cantidad limitada de imagenes elegidas aleatoriamente.";
+    return "La landing muestra exactamente la cantidad indicada, elegida aleatoriamente entre las imagenes habilitadas.";
   }
 
   if (mode === "mixed") {
-    return "Las destacadas permanecen visibles y la API completa el resto con imagenes aleatorias.";
+    return "Las imagenes marcadas como destacadas quedan fijas y la API rellena los espacios restantes con otras imagenes aleatorias.";
   }
 
   return "La landing muestra todas las imagenes habilitadas en el orden definido desde Galeria.";
@@ -110,29 +112,53 @@ function getRotationDescription(rotation) {
 
 function updateSettingsPreview() {
   const settings = getSettingsFromControls();
+  const displayCountInput = document.getElementById("gallery-display-count");
+  const fixedCount = getFixedCount();
+
+  if (displayCountInput) {
+    displayCountInput.disabled = settings.mode === "manual";
+    displayCountInput.min = settings.mode === "mixed"
+      ? String(Math.max(1, fixedCount))
+      : "1";
+
+    if (settings.mode === "mixed" && settings.displayCount < fixedCount) {
+      displayCountInput.value = String(fixedCount);
+      settings.displayCount = fixedCount;
+    }
+  }
+
   const metrics = getGalleryMetrics(settings);
-  const randomCountInput = document.getElementById("gallery-random-count");
   const modeDescription = document.getElementById("gallery-mode-description");
   const rotationDescription = document.getElementById("gallery-rotation-description");
+  const countHelp = document.getElementById("gallery-display-count-help");
 
-  if (randomCountInput) randomCountInput.disabled = settings.mode === "manual";
   if (modeDescription) modeDescription.textContent = getModeDescription(settings.mode);
   if (rotationDescription) rotationDescription.textContent = getRotationDescription(settings.rotation);
 
+  if (countHelp) {
+    if (settings.mode === "mixed") {
+      countHelp.textContent = `${metrics.fixedCount} fijas y ${metrics.randomFillCount} espacios rellenados aleatoriamente.`;
+    } else if (settings.mode === "random") {
+      countHelp.textContent = "Esta es la cantidad total de imagenes aleatorias que aparecera en la landing.";
+    } else {
+      countHelp.textContent = "En modo manual se muestran todas las imagenes habilitadas.";
+    }
+  }
+
   const enabled = document.getElementById("gallery-enabled-count");
-  const featured = document.getElementById("gallery-featured-count");
+  const fixed = document.getElementById("gallery-fixed-count");
   const visible = document.getElementById("gallery-visible-count");
   const summary = document.getElementById("gallery-settings-summary");
 
   if (enabled) enabled.textContent = String(metrics.enabledCount);
-  if (featured) featured.textContent = String(metrics.featuredCount);
+  if (fixed) fixed.textContent = String(metrics.fixedCount);
   if (visible) visible.textContent = String(metrics.visibleCount);
 
   if (summary) {
     if (settings.mode === "mixed") {
       summary.innerHTML = `
-        <strong>${metrics.featuredCount} destacadas + ${Math.min(settings.randomCount, metrics.candidateCount)} aleatorias</strong>
-        <span>${metrics.visibleCount} imagenes visibles en la landing.</span>
+        <strong>${metrics.fixedCount} fijas + ${metrics.randomFillCount} aleatorias</strong>
+        <span>${metrics.visibleCount} de ${settings.displayCount} espacios disponibles seran cubiertos.</span>
       `;
     } else if (settings.mode === "random") {
       summary.innerHTML = `
@@ -149,20 +175,24 @@ function updateSettingsPreview() {
 }
 
 function applySelectionToPage() {
+  const storedSettings = state.selection?.settings || {};
   const settings = {
     ...DEFAULT_SETTINGS,
-    ...(state.selection?.settings || {})
+    ...storedSettings,
+    displayCount: storedSettings.displayCount
+      ?? storedSettings.randomCount
+      ?? DEFAULT_SETTINGS.displayCount
   };
 
   const mode = document.getElementById("gallery-mode");
   const rotation = document.getElementById("gallery-rotation");
-  const randomCount = document.getElementById("gallery-random-count");
+  const displayCount = document.getElementById("gallery-display-count");
   const storage = document.getElementById("gallery-config-storage");
   const updatedAt = document.getElementById("gallery-config-updated-at");
 
   if (mode) mode.value = settings.mode;
   if (rotation) rotation.value = settings.rotation;
-  if (randomCount) randomCount.value = String(settings.randomCount);
+  if (displayCount) displayCount.value = String(settings.displayCount);
 
   if (storage) {
     storage.textContent = state.selection?.storage?.fileName
@@ -208,6 +238,16 @@ async function saveSettings() {
   if (!session?.token || !button || !state.selection) return;
 
   const settings = getSettingsFromControls();
+  const fixedCount = getFixedCount();
+
+  if (settings.mode === "mixed" && settings.displayCount < fixedCount) {
+    showFeedback(
+      "error",
+      `La cantidad total no puede ser menor que las ${fixedCount} imagenes fijas.`
+    );
+    return;
+  }
+
   button.disabled = true;
   showFeedback("info", "Guardando la configuracion en Google Drive...");
 
@@ -234,9 +274,9 @@ export function renderGallerySettingsPage() {
       <div>
         <span class="eyebrow">CONFIGURACION</span>
         <h2>Rotacion de la galeria</h2>
-        <p>Define si las imagenes se muestran manualmente, de forma aleatoria o combinando destacadas con una seleccion variable.</p>
+        <p>Define la cantidad total que aparecera en la landing y combina imagenes fijas con relleno aleatorio.</p>
       </div>
-      <a class="btn btn-secondary" href="/galeria" data-link>${icon("Image")}Administrar imagenes</a>
+      <a class="btn btn-secondary" href="/galeria" data-link>${icon("Image")}Escoger imagenes fijas</a>
     </section>
 
     <div id="gallery-settings-feedback" class="drive-feedback" hidden></div>
@@ -260,9 +300,9 @@ export function renderGallerySettingsPage() {
           </label>
 
           <label>
-            <span>Cantidad aleatoria</span>
-            <input id="gallery-random-count" type="number" value="6" min="1" max="60" />
-            <small>En modo mixto se suma a todas las imagenes marcadas como destacadas.</small>
+            <span>Cantidad total en la landing</span>
+            <input id="gallery-display-count" type="number" value="8" min="1" max="60" />
+            <small id="gallery-display-count-help"></small>
           </label>
 
           <label>
@@ -289,15 +329,15 @@ export function renderGallerySettingsPage() {
 
         <div class="settings-step">
           <strong id="gallery-enabled-count">0</strong>
-          <p><b>Imagenes habilitadas</b><span>Fuente disponible para la galeria.</span></p>
+          <p><b>Imagenes habilitadas</b><span>Conjunto disponible para la galeria.</span></p>
         </div>
         <div class="settings-step">
-          <strong id="gallery-featured-count">0</strong>
-          <p><b>Imagenes destacadas</b><span>Permanecen fijas cuando el modo es mixto.</span></p>
+          <strong id="gallery-fixed-count">0</strong>
+          <p><b>Imagenes fijas</b><span>Son las marcadas como destacadas en la pagina Galeria.</span></p>
         </div>
         <div class="settings-step">
           <strong id="gallery-visible-count">0</strong>
-          <p><b>Imagenes visibles</b><span>Cantidad estimada que recibira la landing.</span></p>
+          <p><b>Imagenes visibles</b><span>Cantidad que recibira actualmente la landing.</span></p>
         </div>
 
         <dl class="gallery-settings-storage">
@@ -314,7 +354,7 @@ export function initGallerySettingsPage() {
   state.loading = false;
 
   document.getElementById("gallery-mode")?.addEventListener("change", updateSettingsPreview);
-  document.getElementById("gallery-random-count")?.addEventListener("input", updateSettingsPreview);
+  document.getElementById("gallery-display-count")?.addEventListener("input", updateSettingsPreview);
   document.getElementById("gallery-rotation")?.addEventListener("change", updateSettingsPreview);
   document.getElementById("gallery-settings-save")?.addEventListener("click", saveSettings);
 
