@@ -5,15 +5,14 @@ import { navigate } from "../../router/router.js";
 const navigation = [
   { href: "/dashboard", label: "Inicio", icon: "Dashboard" },
   { href: "/eventos", label: "Eventos", icon: "Calendar" },
-  { href: "/galeria", label: "Galería", icon: "Image" },
-  { href: "/galeria/configuracion", label: "Configuración", icon: "Settings" }
+  { href: "/galeria", label: "Galeria", icon: "Image" }
 ];
 
 function brandTemplate() {
   return `
     <a class="admin-brand" href="/dashboard" data-link aria-label="Ir al inicio">
       <span class="brand-mark">CP</span>
-      <span><strong>COINPSI</strong><small>Administración</small></span>
+      <span><strong>COINPSI</strong><small>Administracion</small></span>
     </a>
   `;
 }
@@ -22,8 +21,8 @@ function sidebarTemplate(activePath) {
   return `
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="sidebar-top">${brandTemplate()}</div>
-      <nav class="sidebar-nav" aria-label="Navegación principal">
-        <span class="nav-caption">GESTIÓN DE CONTENIDO</span>
+      <nav class="sidebar-nav" aria-label="Navegacion principal">
+        <span class="nav-caption">GESTION DE CONTENIDO</span>
         ${navigation.map((item) => `
           <a class="sidebar-link ${activePath === item.href ? "active" : ""}" href="${item.href}" data-link>
             ${icon(item.icon)}<span>${item.label}</span>
@@ -33,10 +32,10 @@ function sidebarTemplate(activePath) {
       <div class="sidebar-footer">
         <div class="sidebar-help">
           ${icon("Sparkles")}
-          <div><strong>Panel COINPSI</strong><small>Eventos y galería institucional</small></div>
+          <div><strong>Panel COINPSI</strong><small>Eventos y galeria institucional</small></div>
         </div>
         <button class="sidebar-link logout-button" id="logout-button" type="button">
-          ${icon("LogOut")}<span>Cerrar sesión</span>
+          ${icon("LogOut")}<span>Cerrar sesion</span>
         </button>
       </div>
     </aside>
@@ -50,7 +49,7 @@ function headerTemplate(title) {
   return `
     <header class="admin-header">
       <div class="header-title-group">
-        <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Abrir menú">${icon("Menu")}</button>
+        <button class="icon-button menu-button" id="menu-button" type="button" aria-label="Abrir menu">${icon("Menu")}</button>
         <div><span>Panel administrativo</span><h1>${title}</h1></div>
       </div>
       <div class="header-actions">
@@ -69,7 +68,7 @@ export function renderAdminLayout({ title, activePath, content }) {
   return `
     <div class="admin-shell">
       ${sidebarTemplate(activePath)}
-      <button class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Cerrar menú"></button>
+      <button class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Cerrar menu"></button>
       <div class="admin-main">
         ${headerTemplate(title)}
         <main class="admin-content">${content}</main>

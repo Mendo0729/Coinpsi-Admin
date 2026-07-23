@@ -4,10 +4,6 @@ import { renderLoginPage, initLoginPage } from "./pages/login.js";
 import { renderDashboardPage, initDashboardPage } from "./pages/dashboard.js";
 import { renderEventsPage, initEventsPage } from "./pages/events.js";
 import { renderGalleryPage, initGalleryPage } from "./pages/gallery.js";
-import {
-  renderGallerySettingsPage,
-  initGallerySettingsPage
-} from "./pages/gallerySettings.js";
 import { renderNotFoundPage } from "./pages/notFound.js";
 import { validateSession } from "./services/session.service.js";
 
@@ -16,12 +12,7 @@ const app = document.getElementById("app");
 const routes = {
   "/dashboard": { title: "Inicio", render: renderDashboardPage, init: initDashboardPage },
   "/eventos": { title: "Eventos", render: renderEventsPage, init: initEventsPage },
-  "/galeria": { title: "Galeria", render: renderGalleryPage, init: initGalleryPage },
-  "/galeria/configuracion": {
-    title: "Configuracion de galeria",
-    render: renderGallerySettingsPage,
-    init: initGallerySettingsPage
-  }
+  "/galeria": { title: "Galeria", render: renderGalleryPage, init: initGalleryPage }
 };
 
 function renderRoute(path) {
