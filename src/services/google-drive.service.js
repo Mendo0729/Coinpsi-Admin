@@ -3,6 +3,8 @@ import { APP_CONFIG } from "../config.js";
 const DRIVE_API_BASE_URL = `${APP_CONFIG.apiUrl}/admin/google-drive`;
 const GALLERY_API_BASE_URL = `${APP_CONFIG.apiUrl}/admin/gallery`;
 
+let currentGallerySettings = null;
+
 async function requestJson(baseUrl, path, token, options = {}) {
   let response;
 
@@ -89,14 +91,23 @@ export async function getGoogleDriveImageBlob(token, fileId) {
   return response.blob();
 }
 
-export function getGallerySelection(token) {
-  return requestJson(GALLERY_API_BASE_URL, "/", token, { method: "GET" });
+export async function getGallerySelection(token) {
+  const response = await requestJson(GALLERY_API_BASE_URL, "/", token, { method: "GET" });
+  currentGallerySettings = response.selection?.settings || currentGallerySettings;
+  return response;
 }
 
-export function saveGallerySelection(token, items) {
-  return requestJson(GALLERY_API_BASE_URL, "/selection", token, {
+export async function saveGallerySelection(token, items, settings = null) {
+  const effectiveSettings = settings || currentGallerySettings;
+  const response = await requestJson(GALLERY_API_BASE_URL, "/selection", token, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items })
+    body: JSON.stringify({
+      items,
+      ...(effectiveSettings ? { settings: effectiveSettings } : {})
+    })
   });
+
+  currentGallerySettings = response.selection?.settings || effectiveSettings;
+  return response;
 }
