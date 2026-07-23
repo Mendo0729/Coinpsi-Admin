@@ -1,9 +1,9 @@
 node_modules/
+
+# Archivos de entorno: solo locales
 .env
 .env.*
-!.env.example
-!.env.development.example
-!.env.production.example
+
 logs/
 *.log
 coverage/
