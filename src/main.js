@@ -6,6 +6,7 @@ import { renderEventsPage, initEventsPage } from "./pages/events.js";
 import { renderGalleryPage, initGalleryPage } from "./pages/gallery.js";
 import { renderNotFoundPage } from "./pages/notFound.js";
 import { validateSession } from "./services/session.service.js";
+import { initUserFacingCopy } from "./user-facing-copy.js";
 
 const app = document.getElementById("app");
 
@@ -36,6 +37,7 @@ function renderRoute(path) {
 }
 
 async function bootstrap() {
+  initUserFacingCopy();
   await validateSession();
   startRouter(renderRoute);
 }
