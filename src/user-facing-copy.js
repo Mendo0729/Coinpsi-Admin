@@ -112,19 +112,33 @@ function updateGallerySelectionHeading(root) {
   }
 }
 
+function simplifyDriveDetails(root) {
+  root.querySelectorAll(".drive-details > div").forEach((item) => {
+    const label = item.querySelector("dt");
+    const value = item.querySelector("dd");
+    if (label?.textContent.trim() === "Estado" && value?.textContent.trim() !== "Listo para usar") {
+      value.textContent = "Listo para usar";
+    }
+  });
+}
+
 function simplifyDriveConfigurationError(root) {
   const errorState = root.querySelector("#drive-status-content .drive-state-error");
   if (!errorState) return;
 
   const title = errorState.querySelector("strong");
   const message = errorState.querySelector("p");
-  if (title) title.textContent = "Google Drive no está disponible";
-  if (message) message.textContent = "Revisa la conexión e inténtalo nuevamente.";
+  const clearTitle = "Google Drive no está disponible";
+  const clearMessage = "Revisa la conexión e inténtalo nuevamente.";
+
+  if (title && title.textContent !== clearTitle) title.textContent = clearTitle;
+  if (message && message.textContent !== clearMessage) message.textContent = clearMessage;
 }
 
 function applyUserFacingCopy(root) {
   replaceTextNodes(root);
   updateGallerySelectionHeading(root);
+  simplifyDriveDetails(root);
   simplifyDriveConfigurationError(root);
 }
 
