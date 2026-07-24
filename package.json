@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --env-file=.env.development server.js"
+    "dev": "node --env-file=.env.development server.js",
+    "build": "node scripts/build-static.js"
   },
   "dependencies": {
     "express": "^4.18.2"
