@@ -5,7 +5,8 @@ import { navigate } from "../../router/router.js";
 const navigation = [
   { href: "/dashboard", label: "Inicio", icon: "Dashboard" },
   { href: "/eventos", label: "Eventos", icon: "Calendar" },
-  { href: "/galeria", label: "Galeria", icon: "Image" }
+  { href: "/galeria", label: "Galeria", icon: "Image" },
+  { href: "/espacio-del-saber", label: "Espacio del Saber", icon: "Sparkles" }
 ];
 
 function brandTemplate() {
@@ -32,7 +33,7 @@ function sidebarTemplate(activePath) {
       <div class="sidebar-footer">
         <div class="sidebar-help">
           ${icon("Sparkles")}
-          <div><strong>Panel COINPSI</strong><small>Eventos y galeria institucional</small></div>
+          <div><strong>Panel COINPSI</strong><small>Eventos, galeria y conocimiento</small></div>
         </div>
         <button class="sidebar-link logout-button" id="logout-button" type="button">
           ${icon("LogOut")}<span>Cerrar sesion</span>
