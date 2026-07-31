@@ -4,6 +4,7 @@ import { renderLoginPage, initLoginPage } from "./pages/login.js";
 import { renderDashboardPage, initDashboardPage } from "./pages/dashboard.js";
 import { renderEventsPage, initEventsPage } from "./pages/events.js";
 import { renderGalleryPage, initGalleryPage } from "./pages/gallery.js";
+import { renderKnowledgePage, initKnowledgePage } from "./pages/knowledge.js";
 import { renderNotFoundPage } from "./pages/notFound.js";
 import { validateSession } from "./services/session.service.js";
 import { initUserFacingCopy } from "./user-facing-copy.js";
@@ -13,7 +14,8 @@ const app = document.getElementById("app");
 const routes = {
   "/dashboard": { title: "Inicio", render: renderDashboardPage, init: initDashboardPage },
   "/eventos": { title: "Eventos", render: renderEventsPage, init: initEventsPage },
-  "/galeria": { title: "Galeria", render: renderGalleryPage, init: initGalleryPage }
+  "/galeria": { title: "Galeria", render: renderGalleryPage, init: initGalleryPage },
+  "/espacio-del-saber": { title: "Espacio del Saber", render: renderKnowledgePage, init: initKnowledgePage }
 };
 
 function renderRoute(path) {
