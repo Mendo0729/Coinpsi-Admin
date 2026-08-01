@@ -55,6 +55,13 @@ export function updateKnowledgePost(token, postId, post) {
   });
 }
 
+export function saveKnowledgeSelection(token, postIds) {
+  return request("/selection", token, {
+    method: "POST",
+    body: JSON.stringify({ postIds })
+  });
+}
+
 export function deleteKnowledgePost(token, postId) {
   return request(`/posts/${encodeURIComponent(postId)}`, token, {
     method: "DELETE"
