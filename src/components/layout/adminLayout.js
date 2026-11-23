@@ -12,8 +12,8 @@ const navigation = [
 function brandTemplate() {
   return `
     <a class="admin-brand" href="/dashboard" data-link aria-label="Ir al inicio">
-      <span class="brand-mark">CP</span>
-      <span><strong>COINPSI</strong><small>Administracion</small></span>
+      <img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="" width="52" height="52" />
+      <span class="admin-brand-copy"><strong>COINPSI</strong><small>Corporación de Investigaciones<br>Psicológicas, S.A.</small></span>
     </a>
   `;
 }
