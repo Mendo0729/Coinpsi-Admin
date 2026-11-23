@@ -11,7 +11,7 @@ export function renderLoginPage() {
         <div class="login-orb login-orb-two"></div>
         <div class="login-brand-content">
           <span class="login-badge">${icon("Sparkles")} Gestión institucional</span>
-          <div class="login-wordmark"><span>CP</span><div><strong>COINPSI</strong><small>Corporación de Investigaciones Psicológicas</small></div></div>
+          <div class="login-wordmark"><img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="" width="68" height="68" /><div><strong>COINPSI</strong><small>Corporación de Investigaciones Psicológicas, S.A.</small></div></div>
           <h1>Administra el contenido de COINPSI desde un solo lugar.</h1>
           <p>Gestiona los eventos, selecciona las imágenes de la galería y controla la información que se publica en la landing institucional.</p>
           <div class="login-feature-list">
@@ -24,7 +24,7 @@ export function renderLoginPage() {
 
       <section class="login-form-panel">
         <form class="login-card" id="login-form" novalidate>
-          <div class="login-mobile-brand"><span>CP</span><strong>COINPSI</strong></div>
+          <div class="login-mobile-brand"><img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="" width="52" height="52" /><strong>COINPSI</strong></div>
           <span class="eyebrow">ACCESO ADMINISTRATIVO</span>
           <h2>Bienvenido</h2>
           <p>Ingresa tus credenciales para acceder al panel.</p>

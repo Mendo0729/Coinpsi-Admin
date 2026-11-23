@@ -1,0 +1,398 @@
+/* COINPSI | Tema institucional del panel administrativo.
+ * Paleta alineada con src/brand.css del sitio público (2026):
+ * azul #96ADC8, verde salvia #A5CCB3 y derivados accesibles.
+ * Se importa al final para adaptar la UI sin modificar sus funcionalidades.
+ */
+:root {
+  --brand-soft-border: rgb(150 173 200 / 0.3);
+  --brand-focus-ring: rgb(69 110 131 / 0.15);
+}
+
+::selection {
+  background: rgb(165 204 179 / 0.35);
+  color: var(--navy-900);
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand-sage-deep);
+  outline-offset: 3px;
+}
+
+/* Navegación clara, como la cabecera de coinpsi.org. */
+.admin-sidebar {
+  color: var(--slate-800);
+  background:
+    radial-gradient(circle at 8% 5%, rgb(150 173 200 / 0.19), transparent 38%),
+    radial-gradient(circle at 90% 94%, rgb(165 204 179 / 0.2), transparent 44%),
+    linear-gradient(180deg, #f8faf8, #ffffff 48%, #f4f9f6);
+  border-right: 1px solid var(--brand-soft-border);
+  box-shadow: 10px 0 34px rgb(40 68 87 / 0.045);
+}
+
+.sidebar-top {
+  padding: 13px 17px;
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.admin-brand {
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-brand .brand-symbol {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.admin-brand-copy {
+  min-width: 0;
+}
+
+.admin-brand strong {
+  color: #6785a2;
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+.admin-brand small {
+  color: var(--navy-800);
+  font-size: 0.59rem;
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: 0.012em;
+}
+
+.nav-caption {
+  color: var(--slate-500);
+}
+
+.sidebar-link {
+  color: var(--slate-700);
+}
+
+.sidebar-link:hover,
+.logout-button:hover {
+  color: var(--navy-900);
+  border-color: rgb(150 173 200 / 0.22);
+  background: rgb(150 173 200 / 0.13);
+}
+
+.sidebar-link.active {
+  color: var(--navy-900);
+  border-color: rgb(165 204 179 / 0.52);
+  background: linear-gradient(105deg, #e6f2ea, #edf4f7);
+  box-shadow: 0 8px 22px rgb(67 105 86 / 0.09);
+}
+
+.sidebar-link.active .icon,
+.sidebar-help .icon {
+  color: var(--brand-sage-deep);
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--slate-200);
+}
+
+.sidebar-help {
+  border-color: var(--brand-soft-border);
+  background: rgb(255 255 255 / 0.72);
+}
+
+.sidebar-help strong {
+  color: var(--navy-900);
+}
+
+.sidebar-help small {
+  color: var(--slate-600);
+}
+
+.sidebar-backdrop {
+  background: rgb(22 46 64 / 0.45);
+}
+
+.admin-header {
+  border-bottom: 1px solid var(--brand-soft-border);
+  background: rgb(248 250 248 / 0.94);
+  backdrop-filter: blur(16px);
+}
+
+.icon-button:hover,
+.knowledge-selection-order button:hover:not(:disabled) {
+  color: var(--brand-sage-deep);
+  border-color: var(--brand-sage);
+  background: #e8f1ea;
+}
+
+.notification-button > span {
+  background: var(--brand-sage-deep);
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, var(--blue-500), var(--brand-sage-deep));
+}
+
+.user-chip {
+  border-color: var(--brand-soft-border);
+}
+
+/* Tarjetas y acciones: superficies luminosas, bordes suaves y acentos salvia. */
+.btn-primary {
+  background: var(--blue-500);
+  color: var(--white);
+  box-shadow: 0 10px 24px rgb(69 110 131 / 0.18);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--brand-sage-deep);
+  box-shadow: 0 12px 26px rgb(67 105 86 / 0.21);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  color: var(--brand-sage-deep);
+  border-color: var(--brand-sage);
+  background: #f4f9f6;
+}
+
+.eyebrow {
+  color: var(--blue-600);
+}
+
+.page-heading,
+.dashboard-hero,
+.knowledge-toolbar {
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid var(--brand-soft-border);
+  border-radius: 22px;
+  background: linear-gradient(125deg, #e4edf1 0%, #edf4f3 50%, #e7f2eb 100%);
+  box-shadow: 0 8px 25px rgb(40 68 87 / 0.04);
+}
+
+.panel-card,
+.stat-card,
+.knowledge-summary-card,
+.knowledge-selection-card,
+.knowledge-table-wrap {
+  border-color: var(--brand-soft-border);
+  box-shadow: 0 5px 22px rgb(40 68 87 / 0.045);
+}
+
+.stat-card::after {
+  background: radial-gradient(circle, rgb(165 204 179 / 0.24), transparent 69%);
+}
+
+.stat-icon,
+.dashboard-event-icon,
+.empty-state > span,
+.placeholder-icon,
+.events-state-icon,
+.drive-state-icon,
+.knowledge-state-icon,
+.knowledge-selection-position {
+  color: var(--brand-sage-deep);
+  background: #e8f1ea;
+}
+
+.status-pill.active,
+.knowledge-landing-visible {
+  color: var(--brand-sage-deep);
+  background: #e6f2ea;
+}
+
+.knowledge-selection-header {
+  background: linear-gradient(125deg, #f4f9f6, #ffffff);
+}
+
+.knowledge-selection-item.is-selected {
+  border-color: rgb(67 105 86 / 0.36);
+  background: #eff7f1;
+}
+
+.is-selected .knowledge-selection-position {
+  color: var(--white);
+  background: var(--brand-sage-deep);
+}
+
+.events-table tbody tr:hover,
+.knowledge-table tbody tr:hover {
+  background: rgb(240 245 243 / 0.72);
+}
+
+.event-action-edit:hover:not(:disabled),
+.drive-item-card:hover,
+.knowledge-actions button:hover:not(.danger) {
+  border-color: var(--brand-sage);
+  background: #edf4f0;
+  color: var(--brand-sage-deep);
+}
+
+.drive-feedback-info {
+  border-color: var(--brand-soft-border);
+  background: var(--blue-50);
+  color: var(--blue-700);
+}
+
+.mode-total {
+  background:
+    radial-gradient(circle at 95% 0%, rgb(165 204 179 / 0.24), transparent 45%),
+    linear-gradient(135deg, var(--navy-950), var(--navy-900));
+}
+
+.mode-total span {
+  color: #c0dac7;
+}
+
+.mode-dot.featured {
+  background: var(--blue-500);
+  box-shadow: 0 0 0 5px rgb(69 110 131 / 0.12);
+}
+
+.mode-dot.random {
+  background: var(--brand-sage-deep);
+  box-shadow: 0 0 0 5px rgb(165 204 179 / 0.23);
+}
+
+.dashboard-status-dot.finished {
+  box-shadow: 0 0 0 5px rgb(69 110 131 / 0.1);
+}
+
+/* Estados de foco consistentes en los formularios de todos los módulos. */
+.form-field input:focus,
+.event-form-field input:focus,
+.event-form-field select:focus,
+.event-form-field textarea:focus,
+.knowledge-field input:focus,
+.knowledge-field select:focus,
+.knowledge-field textarea:focus,
+.settings-form-preview input:focus,
+.settings-form-preview select:focus {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 4px var(--brand-focus-ring);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--brand-sage-deep);
+}
+
+/* Acceso: misma combinación azul niebla y salvia del hero público. */
+.login-page {
+  background: var(--surface);
+}
+
+.login-brand-panel {
+  color: var(--navy-900);
+  background: linear-gradient(125deg, #d8e5eb 0%, #c8dde0 48%, #d9ebe2 100%);
+}
+
+.login-brand-panel::after {
+  background-image:
+    linear-gradient(rgb(53 90 112 / 0.065) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(53 90 112 / 0.065) 1px, transparent 1px);
+}
+
+.login-orb-one {
+  background: radial-gradient(circle, rgb(150 173 200 / 0.52), transparent 68%);
+}
+
+.login-orb-two {
+  background: radial-gradient(circle, rgb(165 204 179 / 0.55), transparent 68%);
+}
+
+.login-badge {
+  color: var(--navy-800);
+  border-color: rgb(53 90 112 / 0.16);
+  background: rgb(255 255 255 / 0.58);
+}
+
+.login-wordmark .brand-symbol {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.login-wordmark strong,
+.login-mobile-brand strong {
+  color: #6785a2;
+  font-weight: 500;
+  font-size: 1.65rem;
+  letter-spacing: 0.1em;
+}
+
+.login-wordmark small {
+  color: var(--navy-800);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.login-brand-content h1 {
+  color: var(--navy-900);
+}
+
+.login-brand-content > p {
+  color: #405a68;
+}
+
+.login-feature-list span {
+  color: var(--navy-800);
+}
+
+.login-feature-list .icon {
+  color: var(--brand-sage-deep);
+}
+
+.login-form-panel {
+  background:
+    radial-gradient(circle at 90% 10%, rgb(165 204 179 / 0.19), transparent 38%),
+    #f8faf8;
+}
+
+.login-card {
+  width: min(100%, 470px);
+  padding: clamp(24px, 3.5vw, 40px);
+  border: 1px solid var(--brand-soft-border);
+  border-radius: 24px;
+  background: var(--white);
+  box-shadow: 0 22px 55px rgb(40 68 87 / 0.09);
+}
+
+.login-mobile-brand .brand-symbol {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+@media (max-width: 900px) {
+  .login-form-panel {
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-brand strong {
+    font-size: 1.32rem;
+  }
+
+  .page-heading,
+  .dashboard-hero,
+  .knowledge-toolbar {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .login-card {
+    padding: 26px 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .sidebar-link,
+  .icon-button {
+    transition: none;
+  }
+}
