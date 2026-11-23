@@ -1,10 +1,12 @@
-name: Verificación de dependencias
+name: Seguridad y pruebas
 
 on:
   pull_request:
     paths:
       - "package.json"
       - "package-lock.json"
+      - "server.js"
+      - "tests/**"
       - "scripts/**"
       - ".github/workflows/dependency-audit.yml"
   push:
@@ -12,6 +14,8 @@ on:
     paths:
       - "package.json"
       - "package-lock.json"
+      - "server.js"
+      - "tests/**"
       - "scripts/**"
       - ".github/workflows/dependency-audit.yml"
 
@@ -28,10 +32,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
-      - name: Instalar dependencias
+      - name: Instalar proyecto sin dependencias externas
         run: npm ci
-      - name: Auditar vulnerabilidades moderadas o superiores
+      - name: Auditar dependencias
         run: npm audit --audit-level=moderate
+      - name: Probar servidor local
+        run: npm test
       - name: Generar build estático
         run: npm run build
+      - name: Comprobar publicación estática
+        run: |
+          test -f dist/index.html
+          test -f dist/runtime-config.js
+          test -f dist/src/main.js
+          test ! -e dist/server.js
+          test ! -e dist/tests
+          test ! -e dist/package.json
