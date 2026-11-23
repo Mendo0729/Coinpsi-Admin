@@ -396,3 +396,28 @@ input[type="radio"] {
     transition: none;
   }
 }
+
+/* Acceso de escritorio: únicamente el logotipo y el nombre institucional,
+   centrados en el panel izquierdo. No altera el formulario administrativo. */
+.login-brand-content {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-wordmark {
+  margin: 0;
+  gap: clamp(16px, 3vw, 32px);
+}
+
+.login-wordmark .brand-symbol {
+  width: clamp(96px, 12vw, 144px);
+  height: clamp(96px, 12vw, 144px);
+}
+
+.login-wordmark strong {
+  font-size: clamp(2.15rem, 4.2vw, 4rem);
+  line-height: 1.1;
+  font-weight: 600;
+}

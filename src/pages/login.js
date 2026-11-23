@@ -10,14 +10,9 @@ export function renderLoginPage() {
         <div class="login-orb login-orb-one"></div>
         <div class="login-orb login-orb-two"></div>
         <div class="login-brand-content">
-          <span class="login-badge">${icon("Sparkles")} Gestión institucional</span>
-          <div class="login-wordmark"><img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="" width="68" height="68" /><div><strong>COINPSI</strong><small>Corporación de Investigaciones Psicológicas, S.A.</small></div></div>
-          <h1>Administra el contenido de COINPSI desde un solo lugar.</h1>
-          <p>Gestiona los eventos, selecciona las imágenes de la galería y controla la información que se publica en la landing institucional.</p>
-          <div class="login-feature-list">
-            <span>${icon("Check")} Gestión centralizada de eventos</span>
-            <span>${icon("Check")} Selección mixta de fotografías</span>
-            <span>${icon("Check")} Integración preparada para Google Drive</span>
+          <div class="login-wordmark">
+            <img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="Logotipo de COINPSI" width="128" height="128" />
+            <strong>COINPSI</strong>
           </div>
         </div>
       </section>
