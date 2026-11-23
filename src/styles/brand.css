@@ -421,3 +421,44 @@ input[type="radio"] {
   line-height: 1.1;
   font-weight: 600;
 }
+
+/* Nombre institucional completo debajo de COINPSI, sin añadir textos promocionales. */
+.login-wordmark-text,
+.login-mobile-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.login-wordmark-text small {
+  max-width: 340px;
+  font-size: clamp(0.76rem, 1.05vw, 0.97rem);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: var(--navy-800);
+}
+
+.login-mobile-brand-text small {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--navy-800);
+}
+
+@media (min-width: 901px) and (max-width: 1170px) {
+  .login-wordmark {
+    gap: 14px;
+  }
+
+  .login-wordmark .brand-symbol {
+    width: 90px;
+    height: 90px;
+  }
+
+  .login-wordmark strong {
+    font-size: clamp(2rem, 3.8vw, 3rem);
+  }
+}

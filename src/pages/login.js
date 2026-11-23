@@ -12,14 +12,17 @@ export function renderLoginPage() {
         <div class="login-brand-content">
           <div class="login-wordmark">
             <img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="Logotipo de COINPSI" width="128" height="128" />
-            <strong>COINPSI</strong>
+            <div class="login-wordmark-text">
+              <strong>COINPSI</strong>
+              <small>Corporación de Investigaciones Psicológicas, S.A.</small>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="login-form-panel">
         <form class="login-card" id="login-form" novalidate>
-          <div class="login-mobile-brand"><img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="" width="52" height="52" /><strong>COINPSI</strong></div>
+          <div class="login-mobile-brand"><img class="brand-symbol" src="/src/assets/images/coinpsi-symbol.svg" alt="" width="52" height="52" /><div class="login-mobile-brand-text"><strong>COINPSI</strong><small>Corporación de Investigaciones Psicológicas, S.A.</small></div></div>
           <span class="eyebrow">ACCESO ADMINISTRATIVO</span>
           <h2>Bienvenido</h2>
           <p>Ingresa tus credenciales para acceder al panel.</p>
