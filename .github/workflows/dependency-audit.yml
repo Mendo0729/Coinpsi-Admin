@@ -1,0 +1,50 @@
+name: Seguridad y pruebas
+
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "server.js"
+      - "tests/**"
+      - "scripts/**"
+      - ".github/workflows/dependency-audit.yml"
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "server.js"
+      - "tests/**"
+      - "scripts/**"
+      - ".github/workflows/dependency-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Instalar proyecto sin dependencias externas
+        run: npm ci
+      - name: Auditar dependencias
+        run: npm audit --audit-level=moderate
+      - name: Probar servidor local
+        run: npm test
+      - name: Generar build estático
+        run: npm run build
+      - name: Comprobar publicación estática
+        run: |
+          test -f dist/index.html
+          test -f dist/runtime-config.js
+          test -f dist/src/main.js
+          test ! -e dist/server.js
+          test ! -e dist/tests
+          test ! -e dist/package.json
