@@ -397,3 +397,7 @@ body.knowledge-modal-open {
     max-height: calc(100vh - 20px);
   }
 }
+
+#knowledge-drive-preview { width:100%; height:min(60vh, 540px); border:1px solid var(--slate-200); border-radius:12px; }
+#knowledge-drive-preview[hidden] { display:none; }
+#knowledge-preview-message { margin:0; color:var(--slate-600); font-size:.82rem; }

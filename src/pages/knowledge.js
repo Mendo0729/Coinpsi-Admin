@@ -1,3 +1,4 @@
+import { parseDriveLink, parseKeywords } from "../services/knowledge-document.js";
 import { icon } from "../icons.js";
 import { navigate } from "../router/router.js";
 import {
@@ -69,7 +70,7 @@ function renderEmptyState() {
   return `
     <div class="knowledge-state">
       <span class="knowledge-state-icon">${icon("Sparkles")}</span>
-      <div><strong>No hay cápsulas registradas</strong><p>Crea la primera publicación para Espacio del Saber.</p></div>
+      <div><strong>No hay publicaciones registradas</strong><p>Crea la primera publicación para Espacio del Saber.</p></div>
     </div>
   `;
 }
@@ -111,7 +112,7 @@ function renderPosts(posts) {
             <th>Categoría</th>
             <th>Estado</th>
             <th>Landing</th>
-            <th>Fecha</th>
+            <th>Fecha</th><th>Actividad</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -126,6 +127,7 @@ function renderPosts(posts) {
                   <span>Por ${escapeHtml(post.authorName)}</span>
                   <p>${escapeHtml(post.summary)}</p>
                   <code>${escapeHtml(post.slug)}</code>
+                  <span>${escapeHtml(({research:"Investigación",article:"Artículo",guide:"Guía",report:"Informe",journal:"Revista"})[post.documentType] || "Sin clasificar")}</span>
                 </div>
               </td>
               <td>${escapeHtml(post.categoryName || "Sin categoría")}</td>
@@ -137,6 +139,7 @@ function renderPosts(posts) {
                   <small>Creada por ${escapeHtml(post.createdByName || "Administrador")}</small>
                 </div>
               </td>
+              <td><div class="knowledge-date-cell"><span>${escapeHtml(post.viewsCount ?? 0)} lecturas solicitadas</span><small>${escapeHtml(post.downloadsCount ?? 0)} descargas solicitadas</small></div></td>
               <td>
                 <div class="knowledge-actions">
                   <button type="button" data-knowledge-action="edit" data-knowledge-id="${escapeHtml(post.id)}">Editar</button>
@@ -210,7 +213,7 @@ function renderSelectionPanel() {
       <header class="knowledge-selection-header">
         <div>
           <span class="page-eyebrow">SELECCIÓN PARA LA LANDING</span>
-          <h3>Elige hasta ${MAX_LANDING_POSTS} cápsulas</h3>
+          <h3>Elige hasta ${MAX_LANDING_POSTS} publicaciones</h3>
           <p>Las publicaciones se muestran en el orden indicado. Solo aparecen las que estén publicadas y seleccionadas.</p>
         </div>
         <div class="knowledge-selection-summary">
@@ -228,7 +231,7 @@ function renderSelectionPanel() {
       ` : `
         <div class="knowledge-selection-empty">
           <strong>No hay publicaciones disponibles</strong>
-          <p>Publica una cápsula para poder seleccionarla en la landing.</p>
+          <p>Publica una publicación para poder seleccionarla en la landing.</p>
         </div>
       `}
     </section>
@@ -249,11 +252,13 @@ function openKnowledgeModal(post = null) {
   if (!modal || !form) return;
 
   form.reset();
+  resetDrivePreview();
+  form.elements.namedItem("status").querySelector('option[value="archived"]').disabled = !post;
   form.dataset.postId = post ? String(post.id) : "";
-  document.getElementById("knowledge-modal-title").textContent = post ? "Editar cápsula" : "Nueva cápsula";
+  document.getElementById("knowledge-modal-title").textContent = post ? "Editar publicación" : "Nueva publicación";
   document.getElementById("knowledge-modal-description").textContent = post
-    ? "Actualiza el contenido y su estado de publicación."
-    : "Completa la información de la cápsula. Luego podrás seleccionarla para la landing.";
+    ? "Actualiza los metadatos, el enlace de Drive y el estado de publicación."
+    : "Completa la información de la publicación. Luego podrás seleccionarla para la landing.";
 
   form.elements.namedItem("categoryId").innerHTML = `
     <option value="">Selecciona una categoría</option>
@@ -263,7 +268,10 @@ function openKnowledgeModal(post = null) {
   if (post) {
     form.elements.namedItem("title").value = post.title || "";
     form.elements.namedItem("summary").value = post.summary || "";
-    form.elements.namedItem("content").value = post.content || "";
+    form.elements.namedItem("driveUrl").value = post.driveUrl || "";
+    form.elements.namedItem("documentType").value = post.documentType || "research";
+    form.elements.namedItem("publicationDate").value = String(post.publicationDate || "").slice(0,10);
+    form.elements.namedItem("keywords").value = (post.keywords || []).join(", ");
     form.elements.namedItem("coverImageUrl").value = post.coverImageUrl || "";
     form.elements.namedItem("authorName").value = post.authorName || "";
     form.elements.namedItem("categoryId").value = String(post.categoryId || "");
@@ -278,11 +286,30 @@ function openKnowledgeModal(post = null) {
   form.elements.namedItem("title")?.focus();
 }
 
+function resetDrivePreview() {
+  const frame = document.getElementById("knowledge-drive-preview");
+  if (frame) { frame.hidden = true; frame.removeAttribute("src"); }
+  const message = document.getElementById("knowledge-preview-message");
+  if (message) message.textContent = "";
+}
+function previewDrive() {
+  resetDrivePreview();
+  const form = document.getElementById("knowledge-form");
+  const message = document.getElementById("knowledge-preview-message");
+  try {
+    const {preview} = parseDriveLink(form.elements.namedItem("driveUrl").value);
+    const frame = document.getElementById("knowledge-drive-preview");
+    frame.src = preview;
+    frame.hidden = false;
+    message.textContent = "Comprueba también el acceso en una ventana privada sin iniciar sesión.";
+  } catch(error) { message.textContent = error.message; }
+}
 function closeKnowledgeModal() {
   const modal = document.getElementById("knowledge-modal");
   const form = document.getElementById("knowledge-form");
   if (!modal) return;
 
+  resetDrivePreview();
   modal.hidden = true;
   document.body.classList.remove("knowledge-modal-open");
   if (form) form.dataset.postId = "";
@@ -297,7 +324,10 @@ function buildPayload(form) {
   const payload = {
     title: getFormValue(formData, "title"),
     summary: getFormValue(formData, "summary"),
-    content: getFormValue(formData, "content"),
+    driveUrl: parseDriveLink(getFormValue(formData, "driveUrl")).url,
+    documentType: getFormValue(formData, "documentType"),
+    publicationDate: getFormValue(formData, "publicationDate") || null,
+    keywords: parseKeywords(getFormValue(formData, "keywords")),
     coverImageUrl: getFormValue(formData, "coverImageUrl"),
     authorName: getFormValue(formData, "authorName"),
     categoryId: getFormValue(formData, "categoryId"),
@@ -306,7 +336,7 @@ function buildPayload(form) {
 
   if (!payload.title) throw new Error("El título es obligatorio.");
   if (!payload.summary) throw new Error("El resumen es obligatorio.");
-  if (!payload.content) throw new Error("El contenido es obligatorio.");
+  if (!form.reportValidity()) throw new Error("Revisa los campos del formulario.");
   if (!payload.authorName) throw new Error("El nombre del autor es obligatorio.");
   if (!payload.categoryId) throw new Error("Selecciona una categoría.");
 
@@ -397,14 +427,14 @@ async function submitKnowledgeForm(event) {
     }
 
     closeKnowledgeModal();
-    showFeedback("success", isEditing ? "Cápsula actualizada correctamente." : "Cápsula creada correctamente.");
+    showFeedback("success", isEditing ? "Publicación actualizada correctamente." : "Publicación creada correctamente.");
     await loadKnowledge();
   } catch (error) {
     if (handleUnauthorized(error)) return;
-    message.textContent = error.message || "No fue posible guardar la cápsula.";
+    message.textContent = error.message || "No fue posible guardar la publicación.";
   } finally {
     button.disabled = false;
-    button.textContent = "Guardar cápsula";
+    button.textContent = "Guardar publicación";
   }
 }
 
@@ -414,7 +444,7 @@ function toggleKnowledgeSelection(postId, selected) {
   if (selected) {
     if (knowledgeSelection.includes(normalizedId)) return true;
     if (knowledgeSelection.length >= MAX_LANDING_POSTS) {
-      showFeedback("error", `Solo puedes mostrar ${MAX_LANDING_POSTS} cápsulas en la landing.`);
+      showFeedback("error", `Solo puedes mostrar ${MAX_LANDING_POSTS} publicaciones en la landing.`);
       return false;
     }
     knowledgeSelection.push(normalizedId);
@@ -495,7 +525,7 @@ async function handleKnowledgeAction(event) {
   }
 
   if (button.dataset.knowledgeAction !== "delete") return;
-  if (!window.confirm(`¿Eliminar la cápsula “${post.title}”? Esta acción no se puede deshacer.`)) return;
+  if (!window.confirm(`¿Eliminar la publicación “${post.title}”? Se eliminará el registro, no el archivo de Google Drive. Esta acción no se puede deshacer.`)) return;
 
   const session = getSession();
   if (!session?.token) return handleUnauthorized({ status: 401 });
@@ -503,11 +533,11 @@ async function handleKnowledgeAction(event) {
   try {
     button.disabled = true;
     await deleteKnowledgePost(session.token, post.id);
-    showFeedback("success", "Cápsula eliminada correctamente.");
+    showFeedback("success", "Publicación eliminada correctamente.");
     await loadKnowledge();
   } catch (error) {
     if (handleUnauthorized(error)) return;
-    showFeedback("error", error.message || "No fue posible eliminar la cápsula.");
+    showFeedback("error", error.message || "No fue posible eliminar la publicación.");
   } finally {
     button.disabled = false;
   }
@@ -520,11 +550,11 @@ export function renderKnowledgePage() {
         <div>
           <span class="page-eyebrow">GESTIÓN DE CONTENIDO</span>
           <h2>Espacio del Saber</h2>
-          <p>Crea las cápsulas y selecciona manualmente cuáles aparecen en la landing.</p>
+          <p>Gestiona investigaciones y documentos de Google Drive. Selecciona cuáles aparecen en el inicio.</p>
         </div>
         <div class="knowledge-toolbar-actions">
           <button class="btn btn-secondary" id="refresh-knowledge" type="button">Actualizar</button>
-          <button class="btn btn-primary" id="new-knowledge" type="button">${icon("Plus")}Nueva cápsula</button>
+          <button class="btn btn-primary" id="new-knowledge" type="button">${icon("Plus")}Nueva publicación</button>
         </div>
       </div>
 
@@ -533,7 +563,7 @@ export function renderKnowledgePage() {
       <div class="knowledge-summary-card">
         <span>Publicaciones registradas</span>
         <strong id="knowledge-count">0</strong>
-        <small>Publicar una cápsula no la muestra automáticamente: debes incluirla en la selección de la landing.</small>
+        <small>Las publicaciones aparecen en el catálogo. La selección de inicio es independiente.</small>
       </div>
 
       <div id="knowledge-selection"></div>
@@ -546,8 +576,8 @@ export function renderKnowledgePage() {
         <header>
           <div>
             <span class="page-eyebrow">ESPACIO DEL SABER</span>
-            <h2 id="knowledge-modal-title">Nueva cápsula</h2>
-            <p id="knowledge-modal-description">Completa la información de la cápsula.</p>
+            <h2 id="knowledge-modal-title">Nueva publicación</h2>
+            <p id="knowledge-modal-description">Completa la información de la publicación.</p>
           </div>
           <button class="knowledge-modal-close" type="button" data-close-knowledge aria-label="Cerrar">×</button>
         </header>
@@ -575,8 +605,28 @@ export function renderKnowledgePage() {
             </label>
 
             <label class="knowledge-field knowledge-field-wide">
-              <span>Contenido completo</span>
-              <textarea name="content" rows="10" required></textarea>
+              <span>Enlace del PDF en Google Drive</span>
+              <input name="driveUrl" type="url" maxlength="1000" required placeholder="https://drive.google.com/file/d/.../view" />
+              <small>Comparte únicamente documentos autorizados para publicación pública. Habilita lectura y descarga para cualquier persona con el enlace.</small>
+            </label>
+            <div class="knowledge-field knowledge-field-wide">
+              <button class="btn btn-secondary" type="button" id="preview-knowledge-drive">Previsualizar PDF</button>
+              <p id="knowledge-preview-message" role="status"></p>
+              <iframe id="knowledge-drive-preview" title="Vista previa del documento" referrerpolicy="no-referrer" hidden></iframe>
+            </div>
+            <label class="knowledge-field">
+              <span>Tipo de documento</span>
+              <select name="documentType">
+                <option value="research">Investigación</option><option value="article">Artículo</option><option value="guide">Guía</option><option value="report">Informe</option><option value="journal">Revista</option>
+              </select>
+            </label>
+            <label class="knowledge-field">
+              <span>Fecha del documento (opcional)</span>
+              <input name="publicationDate" type="date" />
+            </label>
+            <label class="knowledge-field knowledge-field-wide">
+              <span>Palabras clave (separadas por comas)</span>
+              <input name="keywords" maxlength="1620" placeholder="Psicología, salud mental..." />
             </label>
 
             <label class="knowledge-field knowledge-field-wide">
@@ -598,7 +648,7 @@ export function renderKnowledgePage() {
 
           <footer>
             <button class="btn btn-secondary" type="button" data-close-knowledge>Cancelar</button>
-            <button class="btn btn-primary" id="save-knowledge" type="submit">Guardar cápsula</button>
+            <button class="btn btn-primary" id="save-knowledge" type="submit">Guardar publicación</button>
           </footer>
         </form>
       </section>
@@ -607,6 +657,8 @@ export function renderKnowledgePage() {
 }
 
 export function initKnowledgePage() {
+  document.getElementById("preview-knowledge-drive")?.addEventListener("click", previewDrive);
+  document.querySelector('#knowledge-form [name="driveUrl"]')?.addEventListener("input", resetDrivePreview);
   document.getElementById("new-knowledge")?.addEventListener("click", () => openKnowledgeModal());
   document.getElementById("refresh-knowledge")?.addEventListener("click", loadKnowledge);
   document.getElementById("knowledge-form")?.addEventListener("submit", submitKnowledgeForm);
